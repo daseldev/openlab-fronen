@@ -171,16 +171,9 @@ const Home = () => {
     setLoginErrors({});
     setError("");
 
-    // Validar email
+    // Solo validar formato de email
     if (!validateEmail(loginEmail)) {
       setLoginErrors(prev => ({ ...prev, email: "Email inválido" }));
-      return;
-    }
-
-    // Validar contraseña
-    const passwordError = validatePassword(loginPassword);
-    if (passwordError) {
-      setLoginErrors(prev => ({ ...prev, password: passwordError }));
       return;
     }
 

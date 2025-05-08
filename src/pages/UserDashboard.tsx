@@ -43,8 +43,10 @@ const UserDashboard = () => {
   });
 
   useEffect(() => {
-    loadProjects();
-  }, [location.pathname]);
+    if (currentUser) {
+      loadProjects();
+    }
+  }, [location.pathname, currentUser]);
 
   const loadProjects = async () => {
     if (!currentUser) return;
@@ -197,63 +199,71 @@ const UserDashboard = () => {
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.map((project) => (
-          <Card key={project.id}>
-            <CardHeader>
-              <CardTitle>{project.title}</CardTitle>
-              <CardDescription>
-                Creado el{" "}
-                {project.createdAt.toLocaleDateString("es-ES", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                {project.description}
-              </p>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button
-                variant="outline"
-                onClick={() => navigate(`/projects/${project.id}`)}
-              >
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Ver
-              </Button>
-              <div className="space-x-2">
+      {projects.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-gray-500">
+            No tienes proyectos creados. ¡Crea tu primer proyecto!
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {projects.map((project) => (
+            <Card key={project.id}>
+              <CardHeader>
+                <CardTitle>{project.title}</CardTitle>
+                <CardDescription>
+                  Creado el{" "}
+                  {project.createdAt.toLocaleDateString("es-ES", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  {project.description}
+                </p>
+              </CardContent>
+              <CardFooter className="flex justify-between">
                 <Button
                   variant="outline"
-                  size="icon"
-                  onClick={() => {
-                    setSelectedProject(project);
-                    setFormData({
-                      title: project.title,
-                      description: project.description,
-                    });
-                    setEditDialogOpen(true);
-                  }}
+                  onClick={() => navigate(`/projects/${project.id}`)}
                 >
-                  <Edit className="h-4 w-4" />
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Ver
                 </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => {
-                    setSelectedProject(project);
-                    setDeleteDialogOpen(true);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
+                <div className="space-x-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      setSelectedProject(project);
+                      setFormData({
+                        title: project.title,
+                        description: project.description,
+                      });
+                      setEditDialogOpen(true);
+                    }}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      setSelectedProject(project);
+                      setDeleteDialogOpen(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      )}
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
