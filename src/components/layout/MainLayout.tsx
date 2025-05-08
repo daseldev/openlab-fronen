@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Outlet, Link, useNavigate } from "react-router-dom";
+import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { Moon, Sun, LogIn, LogOut, User, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,35 +12,16 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 
-interface MainLayoutProps {
-  children?: React.ReactNode;
-  isAuthenticated?: boolean;
-  user?: {
-    email: string;
-    displayName?: string;
-  } | null;
-  onSignOut?: () => void;
-}
-
-const MainLayout = ({ children }: MainLayoutProps) => {
+const MainLayout = () => {
   const { currentUser, logout } = useAuth();
-  const isAuthenticated = !!currentUser;
-  const user = currentUser
-    ? {
-        email: currentUser.email || "",
-        displayName: currentUser.displayName || "",
-      }
-    : null;
+  const navigate = useNavigate();
+  const location = useLocation();
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const navigate = useNavigate();
 
-  // Check for user's preferred theme on component mount
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
-    const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    ).matches;
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
     if (savedTheme) {
       setTheme(savedTheme);
@@ -68,173 +49,143 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   };
 
   const getUserInitials = () => {
-    if (user?.displayName) {
-      return user.displayName
+    if (currentUser?.displayName) {
+      return currentUser.displayName
         .split(" ")
         .map((name) => name[0])
         .join("");
     }
-    return user?.email?.charAt(0).toUpperCase() || "U";
+    return currentUser?.email?.charAt(0).toUpperCase() || "U";
   };
 
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
+
+  const navItems = [
+    { path: "/", label: "Inicio" },
+    { path: "/explore", label: "Explorar" },
+    ...(currentUser ? [{ path: "/dashboard", label: "Mis Proyectos" }] : []),
+  ];
+
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
-      {/* Navigation Bar */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          {/* Logo and Title */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold">ML</span>
-            </div>
-            <span className="font-bold text-xl">Mi OpenLab</span>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link
-              to="/"
-              className="text-foreground hover:text-primary transition-colors"
-            >
-              Explorar Proyectos
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-14 items-center">
+          <div className="mr-4 hidden md:flex">
+            <Link to="/" className="mr-6 flex items-center space-x-2">
+              <span className="hidden font-bold sm:inline-block">
+                Mi OpenLab
+              </span>
             </Link>
-            {isAuthenticated && (
-              <Link
-                to="/dashboard"
-                className="text-foreground hover:text-primary transition-colors"
-              >
-                Mi Portal
-              </Link>
-            )}
+            <nav className="flex items-center space-x-6 text-sm font-medium">
+              {navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`transition-colors hover:text-foreground/80 ${
+                    isActive(item.path)
+                      ? "text-foreground"
+                      : "text-foreground/60"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
 
-            <div className="flex items-center space-x-2">
-              {/* Theme Toggle */}
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild>
               <Button
                 variant="ghost"
-                size="icon"
-                onClick={toggleTheme}
-                className="rounded-full"
+                className="mr-2 px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 md:hidden"
               >
-                {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
+                <Menu className="h-6 w-6" />
+                <span className="sr-only">Toggle Menu</span>
               </Button>
-
-              {/* Authentication */}
-              {isAuthenticated ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="rounded-full p-0 h-9 w-9"
-                    >
-                      <Avatar>
-                        <AvatarImage
-                          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`}
-                        />
-                        <AvatarFallback>{getUserInitials()}</AvatarFallback>
-                      </Avatar>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <Link to="/dashboard" className="cursor-pointer">
-                        <User className="mr-2 h-4 w-4" />
-                        Mi Portal
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={handleSignOut}
-                      className="cursor-pointer"
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Cerrar Sesión
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <Button variant="outline" size="sm" asChild>
-                  <Link to="/login">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Iniciar Sesión
+            </SheetTrigger>
+            <SheetContent side="left" className="pr-0">
+              <Link
+                to="/"
+                className="flex items-center"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <span className="font-bold">Mi OpenLab</span>
+              </Link>
+              <nav className="flex flex-col space-y-4 mt-4">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`text-sm font-medium transition-colors hover:text-foreground/80 ${
+                      isActive(item.path)
+                        ? "text-foreground"
+                        : "text-foreground/60"
+                    }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {item.label}
                   </Link>
-                </Button>
-              )}
-            </div>
-          </nav>
+                ))}
+              </nav>
+            </SheetContent>
+          </Sheet>
 
-          {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center">
+          <div className="flex flex-1 items-center justify-end space-x-2">
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
-              className="mr-2 rounded-full"
+              className="h-9 w-9"
             >
-              {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
+              {theme === "light" ? (
+                <Moon className="h-4 w-4" />
+              ) : (
+                <Sun className="h-4 w-4" />
+              )}
+              <span className="sr-only">Toggle theme</span>
             </Button>
 
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Menu size={24} />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[250px]">
-                <div className="flex flex-col space-y-4 mt-8">
-                  <Link
-                    to="/"
-                    className="text-foreground hover:text-primary transition-colors py-2"
-                    onClick={() => setIsMobileMenuOpen(false)}
+            {currentUser ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="relative h-9 w-9 rounded-full"
                   >
-                    Explorar Proyectos
-                  </Link>
-
-                  {isAuthenticated ? (
-                    <>
-                      <Link
-                        to="/dashboard"
-                        className="text-foreground hover:text-primary transition-colors py-2"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <User className="inline mr-2 h-4 w-4" />
-                        Mi Portal
-                      </Link>
-                      <Button variant="outline" onClick={handleSignOut}>
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Cerrar Sesión
-                      </Button>
-                    </>
-                  ) : (
-                    <Button variant="outline" asChild>
-                      <Link
-                        to="/login"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <LogIn className="mr-2 h-4 w-4" />
-                        Iniciar Sesión
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-              </SheetContent>
-            </Sheet>
+                    <Avatar className="h-9 w-9">
+                      <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Cerrar Sesión</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button
+                variant="ghost"
+                className="gap-2"
+                onClick={() => navigate("/")}
+              >
+                <LogIn className="h-4 w-4" />
+                <span>Iniciar Sesión</span>
+              </Button>
+            )}
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-grow container mx-auto px-4 py-6">
-        {children || <Outlet />}
+      <main>
+        <Outlet />
       </main>
-
-      {/* Footer */}
-      <footer className="border-t bg-card py-6">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>
-            © {new Date().getFullYear()} Mi OpenLab. Todos los derechos
-            reservados.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 };

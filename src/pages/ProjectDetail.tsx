@@ -1,137 +1,172 @@
-import React from "react";
-import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Edit, Trash2 } from "lucide-react";
-
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Project } from "@/types/project";
+import { getProject, deleteProject } from "@/lib/projects";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardFooter,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "@/components/ui/use-toast";
+import { ArrowLeft, Edit, Trash2 } from "lucide-react";
 
-interface ProjectDetailProps {
-  isOwner?: boolean;
-  onDelete?: (id: string) => void;
-}
+const ProjectDetail = () => {
+  const { projectId } = useParams<{ projectId: string }>();
+  const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  const [project, setProject] = useState<Project | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-const ProjectDetail = ({
-  isOwner = false,
-  onDelete = () => {},
-}: ProjectDetailProps) => {
-  const { id } = useParams<{ id: string }>();
+  useEffect(() => {
+    if (projectId) {
+      loadProject();
+    }
+  }, [projectId]);
 
-  // Mock project data - in a real app, this would be fetched from a database
-  const project = {
-    id: id || "1",
-    title: "Machine Learning Image Recognition System",
-    description:
-      "A comprehensive system that uses convolutional neural networks to identify and classify objects in images. The project implements state-of-the-art algorithms for feature extraction and pattern recognition, achieving over 95% accuracy on standard benchmark datasets. The system includes a user-friendly interface for uploading images and viewing classification results, as well as detailed analytics on confidence scores and alternative classifications.",
-    author: {
-      id: "123",
-      name: "Alex Johnson",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
-    },
-    createdAt: new Date().toLocaleDateString(),
+  const loadProject = async () => {
+    if (!projectId) return;
+    try {
+      const projectData = await getProject(projectId);
+      if (projectData) {
+        setProject(projectData);
+      } else {
+        toast({
+          title: "Error",
+          description: "El proyecto no existe.",
+          variant: "destructive",
+        });
+        navigate("/explore");
+      }
+    } catch (error) {
+      console.error("Error loading project:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo cargar el proyecto.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDelete = () => {
-    onDelete(project.id);
+  const handleDelete = async () => {
+    if (!project) return;
+    try {
+      await deleteProject(project.id);
+      toast({
+        title: "Proyecto eliminado",
+        description: "El proyecto ha sido eliminado exitosamente.",
+      });
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el proyecto.",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (isLoading) {
+    return <div>Cargando...</div>;
+  }
+
+  if (!project) {
+    return null;
+  }
+
+  const isAuthor = currentUser?.uid === project.authorId;
 
   return (
-    <div className="container mx-auto py-8 px-4 bg-background">
-      <div className="mb-6">
-        <Link to="/">
-          <Button variant="ghost" className="pl-0">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Projects
-          </Button>
-        </Link>
-      </div>
+    <div className="container mx-auto py-8">
+      <div className="max-w-4xl mx-auto">
+        <Button
+          variant="ghost"
+          className="mb-6"
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Volver
+        </Button>
 
-      <Card className="max-w-4xl mx-auto shadow-lg">
-        <CardHeader className="pb-4">
-          <div className="flex justify-between items-start">
-            <CardTitle className="text-3xl font-bold">
-              {project.title}
-            </CardTitle>
-            {isOwner && (
-              <div className="flex space-x-2">
-                <Link to={`/edit-project/${project.id}`}>
-                  <Button variant="outline" size="sm">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                </Link>
-
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm">
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently
-                        delete your project and remove it from our servers.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDelete}>
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle className="text-3xl">{project.title}</CardTitle>
+                <CardDescription className="mt-2">
+                  Por {project.authorName} • Creado el{" "}
+                  {project.createdAt.toLocaleDateString("es-ES", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </CardDescription>
               </div>
-            )}
-          </div>
-        </CardHeader>
-
-        <CardContent className="pt-2">
-          <div className="prose max-w-none dark:prose-invert">
-            <p className="text-lg text-muted-foreground mb-8">
-              {project.description}
-            </p>
-          </div>
-        </CardContent>
-
-        <CardFooter className="border-t pt-6 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <Avatar>
-              <AvatarImage
-                src={project.author.avatar}
-                alt={project.author.name}
-              />
-              <AvatarFallback>{project.author.name.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-medium">{project.author.name}</p>
-              <p className="text-sm text-muted-foreground">
-                Created on {project.createdAt}
-              </p>
+              {isAuthor && (
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => navigate(`/projects/${project.id}/edit`)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setDeleteDialogOpen(true)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
-          </div>
-        </CardFooter>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            <div className="prose dark:prose-invert max-w-none">
+              <p className="text-lg">{project.description}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Eliminar Proyecto</DialogTitle>
+              <DialogDescription>
+                ¿Estás seguro de que deseas eliminar este proyecto? Esta acción no
+                se puede deshacer.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setDeleteDialogOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button variant="destructive" onClick={handleDelete}>
+                Eliminar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 };
