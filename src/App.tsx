@@ -45,11 +45,7 @@ function AppRoutes() {
         },
         {
           path: "projects/:projectId",
-          element: (
-            <ProtectedRoute>
-              <ProjectDetail />
-            </ProtectedRoute>
-          ),
+          element: <ProjectDetail />,
         },
       ],
     },

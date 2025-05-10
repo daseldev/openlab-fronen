@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
-import { Moon, Sun, LogIn, LogOut, User, Menu, X } from "lucide-react";
+import { Moon, Sun, LogIn, LogOut, User, Menu, X, LogInIcon, UserPlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -11,13 +11,68 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/use-toast";
+import { Input } from "@/components/ui/input";
+
+const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const validatePassword = (password: string): string | null => {
+  if (password.length < 6) {
+    return "La contraseña debe tener al menos 6 caracteres";
+  }
+  if (!/[A-Z]/.test(password)) {
+    return "La contraseña debe contener al menos una mayúscula";
+  }
+  if (!/[a-z]/.test(password)) {
+    return "La contraseña debe contener al menos una minúscula";
+  }
+  if (!/[0-9]/.test(password)) {
+    return "La contraseña debe contener al menos un número";
+  }
+  return null;
+};
 
 const MainLayout = () => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, login, register, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Estados para login y registro
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [registerOpen, setRegisterOpen] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
+  const [registerName, setRegisterName] = useState("");
+  const [registerConfirmPassword, setRegisterConfirmPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [loginErrors, setLoginErrors] = useState<{
+    email?: string;
+    password?: string;
+  }>({});
+  const [registerErrors, setRegisterErrors] = useState<{
+    name?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
@@ -45,6 +100,75 @@ const MainLayout = () => {
       navigate("/");
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginErrors({});
+    setError("");
+    if (!validateEmail(loginEmail)) {
+      setLoginErrors(prev => ({ ...prev, email: "Email inválido" }));
+      return;
+    }
+    setIsLoading(true);
+    try {
+      await login(loginEmail, loginPassword);
+      setLoginOpen(false);
+      setLoginEmail("");
+      setLoginPassword("");
+      toast({
+        title: "Inicio de sesión exitoso",
+        description: "Has iniciado sesión correctamente.",
+      });
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Error al iniciar sesión:", error);
+      setError("Error al iniciar sesión. Verifica tus credenciales.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRegisterErrors({});
+    setError("");
+    if (registerName.length < 2) {
+      setRegisterErrors(prev => ({ ...prev, name: "El nombre debe tener al menos 2 caracteres" }));
+      return;
+    }
+    if (!validateEmail(registerEmail)) {
+      setRegisterErrors(prev => ({ ...prev, email: "Email inválido" }));
+      return;
+    }
+    const passwordError = validatePassword(registerPassword);
+    if (passwordError) {
+      setRegisterErrors(prev => ({ ...prev, password: passwordError }));
+      return;
+    }
+    if (registerPassword !== registerConfirmPassword) {
+      setRegisterErrors(prev => ({ ...prev, confirmPassword: "Las contraseñas no coinciden" }));
+      return;
+    }
+    setIsLoading(true);
+    try {
+      await register(registerEmail, registerPassword, registerName);
+      setRegisterOpen(false);
+      setRegisterEmail("");
+      setRegisterPassword("");
+      setRegisterName("");
+      setRegisterConfirmPassword("");
+      toast({
+        title: "Registro exitoso",
+        description: "Tu cuenta ha sido creada correctamente.",
+      });
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Error al registrarse:", error);
+      setError("Error al crear la cuenta. Intenta con otro correo electrónico.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -146,7 +270,6 @@ const MainLayout = () => {
               )}
               <span className="sr-only">Toggle theme</span>
             </Button>
-
             {currentUser ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -170,14 +293,166 @@ const MainLayout = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button
-                variant="ghost"
-                className="gap-2"
-                onClick={() => navigate("/")}
-              >
-                <LogIn className="h-4 w-4" />
-                <span>Iniciar Sesión</span>
-              </Button>
+              <>
+                <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" onClick={() => setLoginOpen(true)}>
+                      <LogInIcon className="h-4 w-4 mr-1" />Iniciar Sesión
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Iniciar Sesión</DialogTitle>
+                      <DialogDescription>
+                        Ingresa tus credenciales para acceder a tu cuenta.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleLogin} className="space-y-4 pt-4">
+                      {error && (
+                        <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
+                          {error}
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Correo Electrónico</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="correo@ejemplo.com"
+                          value={loginEmail}
+                          onChange={(e) => {
+                            setLoginEmail(e.target.value);
+                            setLoginErrors(prev => ({ ...prev, email: undefined }));
+                          }}
+                          className={loginErrors.email ? "border-destructive" : ""}
+                          required
+                        />
+                        {loginErrors.email && (
+                          <p className="text-sm text-destructive">{loginErrors.email}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="password">Contraseña</Label>
+                        <Input
+                          id="password"
+                          type="password"
+                          value={loginPassword}
+                          onChange={(e) => {
+                            setLoginPassword(e.target.value);
+                            setLoginErrors(prev => ({ ...prev, password: undefined }));
+                          }}
+                          className={loginErrors.password ? "border-destructive" : ""}
+                          required
+                        />
+                        {loginErrors.password && (
+                          <p className="text-sm text-destructive">{loginErrors.password}</p>
+                        )}
+                      </div>
+                      <DialogFooter>
+                        <Button type="submit" disabled={isLoading}>
+                          {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+                <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" onClick={() => setRegisterOpen(true)}>
+                      <UserPlusIcon className="h-4 w-4 mr-1" />Registrarse
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Crear una cuenta</DialogTitle>
+                      <DialogDescription>
+                        Completa el formulario para registrarte en Mi OpenLab.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleRegister} className="space-y-4 pt-4">
+                      {error && (
+                        <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
+                          {error}
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        <Label htmlFor="register-name">Nombre</Label>
+                        <Input
+                          id="register-name"
+                          type="text"
+                          value={registerName}
+                          onChange={(e) => {
+                            setRegisterName(e.target.value);
+                            setRegisterErrors(prev => ({ ...prev, name: undefined }));
+                          }}
+                          className={registerErrors.name ? "border-destructive" : ""}
+                          required
+                        />
+                        {registerErrors.name && (
+                          <p className="text-sm text-destructive">{registerErrors.name}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="register-email">Correo Electrónico</Label>
+                        <Input
+                          id="register-email"
+                          type="email"
+                          placeholder="correo@ejemplo.com"
+                          value={registerEmail}
+                          onChange={(e) => {
+                            setRegisterEmail(e.target.value);
+                            setRegisterErrors(prev => ({ ...prev, email: undefined }));
+                          }}
+                          className={registerErrors.email ? "border-destructive" : ""}
+                          required
+                        />
+                        {registerErrors.email && (
+                          <p className="text-sm text-destructive">{registerErrors.email}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="register-password">Contraseña</Label>
+                        <Input
+                          id="register-password"
+                          type="password"
+                          value={registerPassword}
+                          onChange={(e) => {
+                            setRegisterPassword(e.target.value);
+                            setRegisterErrors(prev => ({ ...prev, password: undefined }));
+                          }}
+                          className={registerErrors.password ? "border-destructive" : ""}
+                          required
+                        />
+                        {registerErrors.password && (
+                          <p className="text-sm text-destructive">{registerErrors.password}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="register-confirm-password">Confirmar Contraseña</Label>
+                        <Input
+                          id="register-confirm-password"
+                          type="password"
+                          value={registerConfirmPassword}
+                          onChange={(e) => {
+                            setRegisterConfirmPassword(e.target.value);
+                            setRegisterErrors(prev => ({ ...prev, confirmPassword: undefined }));
+                          }}
+                          className={registerErrors.confirmPassword ? "border-destructive" : ""}
+                          required
+                        />
+                        {registerErrors.confirmPassword && (
+                          <p className="text-sm text-destructive">{registerErrors.confirmPassword}</p>
+                        )}
+                      </div>
+                      <DialogFooter>
+                        <Button type="submit" disabled={isLoading}>
+                          {isLoading ? "Registrando..." : "Registrarse"}
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </>
             )}
           </div>
         </div>

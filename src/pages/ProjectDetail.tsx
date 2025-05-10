@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/use-toast";
 import { ArrowLeft, Edit, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 const ProjectDetail = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -108,24 +109,17 @@ const ProjectDetail = () => {
             <div className="flex justify-between items-start">
               <div>
                 <CardTitle className="text-3xl">{project.title}</CardTitle>
-                <CardDescription className="mt-2">
-                  Por {project.authorName} • Creado el{" "}
-                  {project.createdAt.toLocaleDateString("es-ES", {
+                <CardDescription className="mt-2 flex items-center gap-2">
+                  Por {project.authorName} • Creado el {project.createdAt.toLocaleDateString("es-ES", {
                     year: "numeric",
                     month: "long",
                     day: "numeric",
                   })}
+                  <Badge className="bg-muted text-foreground">{project.category}</Badge>
                 </CardDescription>
               </div>
               {isAuthor && (
                 <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => navigate(`/projects/${project.id}/edit`)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
                   <Button
                     variant="outline"
                     size="icon"

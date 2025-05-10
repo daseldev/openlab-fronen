@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 const ExploreProjects = () => {
   const navigate = useNavigate();
@@ -87,12 +88,17 @@ const ExploreProjects = () => {
                 <CardHeader>
                   <CardTitle>{project.title}</CardTitle>
                   <CardDescription>
-                    Por {project.authorName} • Creado el{" "}
-                    {project.createdAt.toLocaleDateString("es-ES", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
+                    <div className="flex items-center gap-2">
+                      <span>
+                        Por {project.authorName} • Creado el{" "}
+                        {project.createdAt.toLocaleDateString("es-ES", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </span>
+                      <Badge className="bg-muted text-foreground">{project.category}</Badge>
+                    </div>
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

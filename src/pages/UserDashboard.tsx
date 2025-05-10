@@ -26,6 +26,21 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { Plus, Edit, Trash2, ExternalLink } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+const CATEGORIES = [
+  { value: "Datos", label: "Datos" },
+  { value: "Desarrollo Web", label: "Desarrollo Web" },
+  { value: "Desarrollo Móvil", label: "Desarrollo Móvil" },
+  { value: "Inteligencia Artificial", label: "Inteligencia Artificial" },
+  { value: "Redes", label: "Redes" },
+  { value: "Seguridad", label: "Seguridad" },
+  { value: "IoT", label: "IoT" },
+  { value: "Cloud", label: "Cloud" },
+  { value: "Videojuegos", label: "Videojuegos" },
+  { value: "Robótica", label: "Robótica" },
+  { value: "Otro", label: "Otro" },
+];
 
 const UserDashboard = () => {
   const { currentUser } = useAuth();
@@ -40,6 +55,7 @@ const UserDashboard = () => {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
+    category: "Datos",
   });
 
   useEffect(() => {
@@ -77,7 +93,7 @@ const UserDashboard = () => {
       );
       setProjects([newProject, ...projects]);
       setCreateDialogOpen(false);
-      setFormData({ title: "", description: "" });
+      setFormData({ title: "", description: "", category: "Datos" });
       toast({
         title: "Proyecto creado",
         description: "Tu proyecto ha sido creado exitosamente.",
@@ -107,7 +123,7 @@ const UserDashboard = () => {
       );
       setEditDialogOpen(false);
       setSelectedProject(null);
-      setFormData({ title: "", description: "" });
+      setFormData({ title: "", description: "", category: "Datos" });
       toast({
         title: "Proyecto actualizado",
         description: "Tu proyecto ha sido actualizado exitosamente.",
@@ -147,6 +163,10 @@ const UserDashboard = () => {
   if (isLoading) {
     return <div>Cargando...</div>;
   }
+
+  // Debug logs
+  console.log("UID actual:", currentUser?.uid);
+  console.log("Proyectos traídos:", projects);
 
   return (
     <div className="container mx-auto py-8">
@@ -190,6 +210,20 @@ const UserDashboard = () => {
                     required
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category">Categoría</Label>
+                  <select
+                    id="category"
+                    className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
+                    value={formData.category}
+                    onChange={e => setFormData({ ...formData, category: e.target.value })}
+                    required
+                  >
+                    {CATEGORIES.map(cat => (
+                      <option key={cat.value} value={cat.value}>{cat.label}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <DialogFooter>
                 <Button type="submit">Crear Proyecto</Button>
@@ -212,12 +246,14 @@ const UserDashboard = () => {
               <CardHeader>
                 <CardTitle>{project.title}</CardTitle>
                 <CardDescription>
-                  Creado el{" "}
-                  {project.createdAt.toLocaleDateString("es-ES", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
+                  <div className="flex items-center gap-2">
+                    <span>
+                      Creado el {project.createdAt.toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" })}
+                    </span>
+                    <Badge className="bg-muted text-foreground">
+                      {project.category}
+                    </Badge>
+                  </div>
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -242,6 +278,7 @@ const UserDashboard = () => {
                       setFormData({
                         title: project.title,
                         description: project.description,
+                        category: project.category,
                       });
                       setEditDialogOpen(true);
                     }}
@@ -296,6 +333,20 @@ const UserDashboard = () => {
                   }
                   required
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-category">Categoría</Label>
+                <select
+                  id="edit-category"
+                  className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
+                  value={formData.category}
+                  onChange={e => setFormData({ ...formData, category: e.target.value })}
+                  required
+                >
+                  {CATEGORIES.map(cat => (
+                    <option key={cat.value} value={cat.value}>{cat.label}</option>
+                  ))}
+                </select>
               </div>
             </div>
             <DialogFooter>
