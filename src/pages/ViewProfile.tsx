@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,11 @@ const ViewProfile = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [followers, setFollowers] = useState<string[]>([]);
+  const [following, setFollowing] = useState<string[]>([]);
+  const [modalType, setModalType] = useState<"followers" | "following" | null>(null);
+  const [modalUsers, setModalUsers] = useState<any[]>([]);
+  const [isFollowLoading, setIsFollowLoading] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -25,7 +30,10 @@ const ViewProfile = () => {
       try {
         const userDoc = await getDoc(doc(db, "users", userId));
         if (userDoc.exists()) {
-          setProfile(userDoc.data());
+          const data = userDoc.data();
+          setProfile(data);
+          setFollowers(data.followers || []);
+          setFollowing(data.following || []);
         }
       } catch (error) {
         setProfile(null);
@@ -35,6 +43,57 @@ const ViewProfile = () => {
     };
     fetchProfile();
   }, [userId]);
+
+  // Cargar usuarios para el modal
+  const fetchModalUsers = async (uids: string[]) => {
+    const users: any[] = [];
+    for (const uid of uids) {
+      try {
+        const userDoc = await getDoc(doc(db, "users", uid));
+        if (userDoc.exists()) {
+          users.push({ uid, ...userDoc.data() });
+        }
+      } catch {}
+    }
+    setModalUsers(users);
+  };
+
+  const isFollowing = currentUser && followers.includes(currentUser.uid);
+  const isOwnProfile = currentUser?.uid === userId;
+
+  const handleFollow = async () => {
+    if (!currentUser || isOwnProfile) return;
+    setIsFollowLoading(true);
+    try {
+      const userRef = doc(db, "users", userId!);
+      const currentUserRef = doc(db, "users", currentUser.uid);
+      if (isFollowing) {
+        // Dejar de seguir
+        await updateDoc(userRef, { followers: arrayRemove(currentUser.uid) });
+        await updateDoc(currentUserRef, { following: arrayRemove(userId) });
+        setFollowers(followers.filter((f) => f !== currentUser.uid));
+      } else {
+        // Seguir
+        await updateDoc(userRef, { followers: arrayUnion(currentUser.uid) });
+        await updateDoc(currentUserRef, { following: arrayUnion(userId) });
+        setFollowers([...followers, currentUser.uid]);
+      }
+    } catch (e) {
+      // Manejar error
+    } finally {
+      setIsFollowLoading(false);
+    }
+  };
+
+  const openModal = (type: "followers" | "following") => {
+    setModalType(type);
+    fetchModalUsers(type === "followers" ? followers : following);
+  };
+
+  const closeModal = () => {
+    setModalType(null);
+    setModalUsers([]);
+  };
 
   const getUserInitials = () => {
     if (profile?.displayName) {
@@ -65,8 +124,8 @@ const ViewProfile = () => {
           </Avatar>
         </div>
       </div>
-      {/* Botón Editar perfil completamente a la derecha */}
-      {currentUser?.uid === userId && (
+      {/* Botón Editar perfil y proyectos */}
+      {isOwnProfile && (
         <div className="flex justify-end w-full px-8 mt-4 gap-4">
           <Button
             className="shadow-lg bg-white/90 text-black hover:bg-white"
@@ -82,13 +141,20 @@ const ViewProfile = () => {
           </Button>
         </div>
       )}
-      {currentUser?.uid !== userId && (
-        <div className="flex justify-end w-full px-8 mt-4">
+      {!isOwnProfile && (
+        <div className="flex justify-end w-full px-8 mt-4 gap-4">
           <Button
             className="shadow-lg bg-blue-600 text-white hover:bg-blue-700"
             onClick={() => navigate(`/user/${userId}/projects`)}
           >
             Ver Proyectos
+          </Button>
+          <Button
+            variant={isFollowing ? "outline" : "default"}
+            disabled={isFollowLoading}
+            onClick={handleFollow}
+          >
+            {isFollowing ? "Dejar de seguir" : "Seguir"}
           </Button>
         </div>
       )}
@@ -101,6 +167,33 @@ const ViewProfile = () => {
           {profile.location && (
             <div className="text-sm text-muted-foreground mt-1">{profile.location}</div>
           )}
+          {/* Seguidores/Seguidos */}
+          <div className="flex gap-6 mt-4">
+            <button className="text-blue-600 hover:underline font-medium" onClick={() => openModal("followers")}>{followers.length} seguidores</button>
+            <button className="text-blue-600 hover:underline font-medium" onClick={() => openModal("following")}>{following.length} seguidos</button>
+          </div>
+          {/* Modal seguidores/seguidos */}
+          <Dialog open={!!modalType} onOpenChange={closeModal}>
+            <DialogContent className="max-w-md mx-auto">
+              <h2 className="text-xl font-bold mb-4">{modalType === "followers" ? "Seguidores" : "Seguidos"}</h2>
+              <div className="space-y-4 max-h-80 overflow-y-auto">
+                {modalUsers.length === 0 ? (
+                  <div className="text-muted-foreground">No hay usuarios.</div>
+                ) : (
+                  modalUsers.map((user) => (
+                    <div key={user.uid} className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={user.photoURL} />
+                        <AvatarFallback>{user.displayName?.[0] || "U"}</AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{user.displayName || user.email}</span>
+                      <Button size="sm" variant="link" onClick={() => { navigate(`/profile/${user.uid}`); closeModal(); }}>Ver perfil</Button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
           {/* Hipervínculo Información de contacto */}
           <div className="flex justify-center mt-6">
             <Dialog>
