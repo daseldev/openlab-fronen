@@ -4,6 +4,7 @@ import Home from "./components/home";
 import UserDashboard from "./pages/UserDashboard";
 import ProjectDetail from "./pages/ProjectDetail";
 import ExploreProjects from "./pages/ExploreProjects";
+import UserProfile from "./pages/UserProfile";
 import MainLayout from "./components/layout/MainLayout";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Loader2 } from "lucide-react";
@@ -40,6 +41,14 @@ function AppRoutes() {
           element: (
             <ProtectedRoute>
               <UserDashboard />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "profile",
+          element: (
+            <ProtectedRoute>
+              <UserProfile />
             </ProtectedRoute>
           ),
         },

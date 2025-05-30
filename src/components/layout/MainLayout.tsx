@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
-import { Moon, Sun, LogIn, LogOut, User, Menu, X, LogInIcon, UserPlusIcon } from "lucide-react";
+import { Moon, Sun, LogIn, LogOut, User, Menu, X, LogInIcon, UserPlusIcon, UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -46,21 +46,23 @@ const validatePassword = (password: string): string | null => {
 };
 
 const MainLayout = () => {
-  const { currentUser, login, register, logout } = useAuth();
+  const { currentUser, login, register, logout, resetPassword } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  // Estados para login y registro
   const [loginOpen, setLoginOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
+  const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerName, setRegisterName] = useState("");
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetError, setResetError] = useState("");
+  const [resetSuccess, setResetSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [loginErrors, setLoginErrors] = useState<{
@@ -167,6 +169,33 @@ const MainLayout = () => {
     } catch (error) {
       console.error("Error al registrarse:", error);
       setError("Error al crear la cuenta. Intenta con otro correo electrónico.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetError("");
+    setResetSuccess(false);
+    
+    if (!validateEmail(resetEmail)) {
+      setResetError("Por favor, ingresa un correo electrónico válido");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await resetPassword(resetEmail);
+      setResetSuccess(true);
+      setResetEmail("");
+      toast({
+        title: "Correo enviado",
+        description: "Se ha enviado un correo con instrucciones para restablecer tu contraseña.",
+      });
+    } catch (error) {
+      console.error("Error al enviar correo de recuperación:", error);
+      setResetError("Error al enviar el correo de recuperación. Verifica el correo electrónico.");
     } finally {
       setIsLoading(false);
     }
@@ -285,6 +314,13 @@ const MainLayout = () => {
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
                     className="cursor-pointer"
+                    onClick={() => navigate("/profile")}
+                  >
+                    <UserIcon className="mr-2 h-4 w-4" />
+                    <span>Mi Perfil</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="cursor-pointer"
                     onClick={handleSignOut}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
@@ -347,6 +383,16 @@ const MainLayout = () => {
                         {loginErrors.password && (
                           <p className="text-sm text-destructive">{loginErrors.password}</p>
                         )}
+                        <Button
+                          variant="link"
+                          className="px-0 text-sm"
+                          onClick={() => {
+                            setLoginOpen(false);
+                            setResetPasswordOpen(true);
+                          }}
+                        >
+                          ¿Olvidaste tu contraseña?
+                        </Button>
                       </div>
                       <DialogFooter>
                         <Button type="submit" disabled={isLoading}>
@@ -447,6 +493,47 @@ const MainLayout = () => {
                       <DialogFooter>
                         <Button type="submit" disabled={isLoading}>
                           {isLoading ? "Registrando..." : "Registrarse"}
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+                <Dialog open={resetPasswordOpen} onOpenChange={setResetPasswordOpen}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Recuperar Contraseña</DialogTitle>
+                      <DialogDescription>
+                        Ingresa tu correo electrónico y te enviaremos instrucciones para restablecer tu contraseña.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleResetPassword} className="space-y-4 pt-4">
+                      {resetError && (
+                        <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
+                          {resetError}
+                        </div>
+                      )}
+                      {resetSuccess && (
+                        <div className="bg-green-500/15 text-green-500 text-sm p-3 rounded-md">
+                          Se ha enviado un correo con instrucciones para restablecer tu contraseña.
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        <Label htmlFor="reset-email">Correo Electrónico</Label>
+                        <Input
+                          id="reset-email"
+                          type="email"
+                          placeholder="correo@ejemplo.com"
+                          value={resetEmail}
+                          onChange={(e) => {
+                            setResetEmail(e.target.value);
+                            setResetError("");
+                          }}
+                          required
+                        />
+                      </div>
+                      <DialogFooter>
+                        <Button type="submit" disabled={isLoading}>
+                          {isLoading ? "Enviando..." : "Enviar instrucciones"}
                         </Button>
                       </DialogFooter>
                     </form>
