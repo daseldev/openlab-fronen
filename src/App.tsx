@@ -11,6 +11,7 @@ import UserProjects from "./pages/UserProjects";
 import MainLayout from "./components/layout/MainLayout";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Loader2 } from "lucide-react";
+import Feed from "./pages/Feed";
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
@@ -39,6 +40,11 @@ function AppRoutes() {
       children: [
         { index: true, element: <Home /> },
         { path: "explore", element: <ExploreProjects /> },
+        { path: "feed", element: (
+          <ProtectedRoute>
+            <Feed />
+          </ProtectedRoute>
+        ) },
         {
           path: "dashboard",
           element: (

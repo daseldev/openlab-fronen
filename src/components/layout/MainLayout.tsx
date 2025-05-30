@@ -218,7 +218,10 @@ const MainLayout = () => {
   const navItems = [
     { path: "/", label: "Inicio" },
     { path: "/explore", label: "Explorar" },
-    ...(currentUser ? [{ path: "/dashboard", label: "Mis Proyectos" }] : []),
+    ...(currentUser ? [
+      { path: "/feed", label: "Feed" },
+      { path: "/dashboard", label: "Mis Proyectos" },
+    ] : []),
   ];
 
   return (
