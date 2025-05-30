@@ -27,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { Plus, Edit, Trash2, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 
 const CATEGORIES = [
   { value: "Datos", label: "Datos" },
@@ -56,6 +57,7 @@ const UserDashboard = () => {
     title: "",
     description: "",
     category: "Datos",
+    visible: true,
   });
   const [formErrors, setFormErrors] = useState<any>({});
 
@@ -104,7 +106,7 @@ const UserDashboard = () => {
       );
       setProjects([newProject, ...projects]);
       setCreateDialogOpen(false);
-      setFormData({ title: "", description: "", category: "Datos" });
+      setFormData({ title: "", description: "", category: "Datos", visible: true });
       toast({
         title: "Proyecto creado",
         description: "Tu proyecto ha sido creado exitosamente.",
@@ -135,7 +137,7 @@ const UserDashboard = () => {
       );
       setEditDialogOpen(false);
       setSelectedProject(null);
-      setFormData({ title: "", description: "", category: "Datos" });
+      setFormData({ title: "", description: "", category: "Datos", visible: true });
       toast({
         title: "Proyecto actualizado",
         description: "Tu proyecto ha sido actualizado exitosamente.",
@@ -305,6 +307,7 @@ const UserDashboard = () => {
                         title: project.title,
                         description: project.description,
                         category: project.category,
+                        visible: project.visible,
                       });
                       setEditDialogOpen(true);
                     }}
@@ -381,6 +384,16 @@ const UserDashboard = () => {
                   ))}
                 </select>
                 {formErrors.category && <p className="text-red-500 text-sm mt-1">{formErrors.category}</p>}
+              </div>
+              <div className="flex items-center gap-2 mt-4">
+                <Switch
+                  id="visible-switch"
+                  checked={formData.visible}
+                  onCheckedChange={val => setFormData({ ...formData, visible: val })}
+                />
+                <Label htmlFor="visible-switch" className="cursor-pointer select-none">
+                  {formData.visible ? "Visible" : "Invisible"}
+                </Label>
               </div>
             </div>
             <DialogFooter>

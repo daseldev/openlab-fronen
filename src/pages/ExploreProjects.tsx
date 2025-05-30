@@ -30,9 +30,11 @@ const ExploreProjects = () => {
   useEffect(() => {
     const filtered = projects.filter(
       (project) =>
-        project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        project.authorName.toLowerCase().includes(searchQuery.toLowerCase())
+        project.visible && (
+          project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          project.authorName.toLowerCase().includes(searchQuery.toLowerCase())
+        )
     );
     setFilteredProjects(filtered);
   }, [searchQuery, projects]);
@@ -40,8 +42,9 @@ const ExploreProjects = () => {
   const loadProjects = async () => {
     try {
       const allProjects = await getAllProjects();
-      setProjects(allProjects);
-      setFilteredProjects(allProjects);
+      const onlyVisible = allProjects.filter((p) => p.visible);
+      setProjects(onlyVisible);
+      setFilteredProjects(onlyVisible);
     } catch (error) {
       console.error("Error loading projects:", error);
       toast({

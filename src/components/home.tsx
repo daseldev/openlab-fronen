@@ -89,7 +89,8 @@ const Home = () => {
     const fetchProjects = async () => {
       try {
         const allProjects = await getAllProjects();
-        setProjects(allProjects);
+        const onlyVisible = allProjects.filter((p) => p.visible);
+        setProjects(onlyVisible);
       } catch (error) {
         // Puedes mostrar un toast de error si lo deseas
         setProjects([]);
