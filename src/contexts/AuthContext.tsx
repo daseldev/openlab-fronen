@@ -9,6 +9,8 @@ import {
   sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth } from "../lib/firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface AuthContextType {
   currentUser: User | null;
@@ -31,6 +33,23 @@ export function useAuth() {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
+}
+
+// Función para asegurar que el perfil existe en Firestore
+async function ensureUserProfile(user: User) {
+  if (!user) return;
+  const userRef = doc(db, "users", user.uid);
+  const userSnap = await getDoc(userRef);
+  if (!userSnap.exists()) {
+    await setDoc(userRef, {
+      displayName: user.displayName || "",
+      email: user.email,
+      photoURL: user.photoURL || "",
+      followers: [],
+      following: [],
+      // Otros campos por defecto si quieres
+    });
+  }
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -56,6 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Update the user's profile with the display name
       if (userCredential.user) {
         await updateProfile(userCredential.user, { displayName });
+        await ensureUserProfile(userCredential.user);
       }
       return userCredential.user;
     } catch (error) {
@@ -76,6 +96,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         password,
       );
+      if (userCredential.user) {
+        await ensureUserProfile(userCredential.user);
+      }
       return userCredential.user;
     } catch (error) {
       console.error("Error logging in:", error);
@@ -115,8 +138,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let unsubscribe = () => {};
 
     if (auth) {
-      unsubscribe = onAuthStateChanged(auth, (user) => {
+      unsubscribe = onAuthStateChanged(auth, async (user) => {
         setCurrentUser(user);
+        if (user) {
+          await ensureUserProfile(user);
+        }
         setLoading(false);
       });
     } else {

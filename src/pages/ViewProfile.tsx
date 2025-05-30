@@ -44,14 +44,35 @@ const ViewProfile = () => {
     fetchProfile();
   }, [userId]);
 
-  // Cargar usuarios para el modal
+  // Función para seguir/dejar de seguir desde el modal
+  const handleModalFollow = async (targetUid: string, isFollowingUser: boolean) => {
+    if (!currentUser || currentUser.uid === targetUid) return;
+    try {
+      const targetRef = doc(db, "users", targetUid);
+      const currentUserRef = doc(db, "users", currentUser.uid);
+      if (isFollowingUser) {
+        await updateDoc(targetRef, { followers: arrayRemove(currentUser.uid) });
+        await updateDoc(currentUserRef, { following: arrayRemove(targetUid) });
+        // Actualizar modalUsers y following localmente
+        setFollowing(following.filter((f) => f !== targetUid));
+        setModalUsers((prev) => prev.map(u => u.uid === targetUid ? { ...u, _isFollowing: false } : u));
+      } else {
+        await updateDoc(targetRef, { followers: arrayUnion(currentUser.uid) });
+        await updateDoc(currentUserRef, { following: arrayUnion(targetUid) });
+        setFollowing([...following, targetUid]);
+        setModalUsers((prev) => prev.map(u => u.uid === targetUid ? { ...u, _isFollowing: true } : u));
+      }
+    } catch {}
+  };
+
+  // Al cargar usuarios para el modal, marcar si ya los sigues
   const fetchModalUsers = async (uids: string[]) => {
     const users: any[] = [];
     for (const uid of uids) {
       try {
         const userDoc = await getDoc(doc(db, "users", uid));
         if (userDoc.exists()) {
-          users.push({ uid, ...userDoc.data() });
+          users.push({ uid, ...userDoc.data(), _isFollowing: following.includes(uid) });
         }
       } catch {}
     }
@@ -188,6 +209,17 @@ const ViewProfile = () => {
                       </Avatar>
                       <span className="font-medium">{user.displayName || user.email}</span>
                       <Button size="sm" variant="link" onClick={() => { navigate(`/profile/${user.uid}`); closeModal(); }}>Ver perfil</Button>
+                      {currentUser && currentUser.uid !== user.uid && (
+                        user._isFollowing ? (
+                          <Button size="sm" variant="outline" onClick={() => handleModalFollow(user.uid, true)}>
+                            Siguiendo
+                          </Button>
+                        ) : (
+                          <Button size="sm" onClick={() => handleModalFollow(user.uid, false)}>
+                            Seguir
+                          </Button>
+                        )
+                      )}
                     </div>
                   ))
                 )}
