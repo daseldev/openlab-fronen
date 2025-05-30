@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +31,12 @@ const EditProfile = () => {
   const [education, setEducation] = useState<any[]>([]);
   const [experience, setExperience] = useState<any[]>([]);
   const [linkedin, setLinkedin] = useState("");
+  const [github, setGithub] = useState("");
+  const [twitter, setTwitter] = useState("");
+  const [instagram, setInstagram] = useState("");
   const [errors, setErrors] = useState<any>({});
+  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
+  const locationTimeout = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -51,6 +56,9 @@ const EditProfile = () => {
             setEducation(userData.education || []);
             setExperience(userData.experience || []);
             setLinkedin(userData.linkedin || "");
+            setGithub(userData.github || "");
+            setTwitter(userData.twitter || "");
+            setInstagram(userData.instagram || "");
           } else {
             // Si no existe el documento, lo creamos
             await setDoc(doc(db, "users", currentUser.uid), {
@@ -66,6 +74,9 @@ const EditProfile = () => {
               education: [],
               experience: [],
               linkedin: "",
+              github: "",
+              twitter: "",
+              instagram: "",
             });
           }
         } catch (error) {
@@ -137,6 +148,9 @@ const EditProfile = () => {
       if (!exp.years || !/^\d{4}(-\d{4})?$/.test(exp.years)) newErrors[`experience_years_${idx}`] = "Años obligatorio (formato: 2020 o 2020-2023).";
     });
     if (linkedin && !/^https:\/\/(www\.)?linkedin\.com\/.+/.test(linkedin)) newErrors.linkedin = "Debe ser una URL válida de LinkedIn.";
+    if (github && !/^https:\/\/(www\.)?github\.com\/.+/.test(github)) newErrors.github = "Debe ser una URL válida de GitHub.";
+    if (twitter && !/^https:\/\/(www\.)?(twitter\.com|x\.com)\/.+/.test(twitter)) newErrors.twitter = "Debe ser una URL válida de X (antes Twitter).";
+    if (instagram && !/^https:\/\/(www\.)?instagram\.com\/.+/.test(instagram)) newErrors.instagram = "Debe ser una URL válida de Instagram.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -179,6 +193,9 @@ const EditProfile = () => {
         education,
         experience,
         linkedin,
+        github,
+        twitter,
+        instagram,
       });
 
       toast({
@@ -220,7 +237,34 @@ const EditProfile = () => {
   useEffect(() => {
     validate();
     // eslint-disable-next-line
-  }, [displayName, headline, contactInfo, bio, education, experience, linkedin]);
+  }, [displayName, headline, contactInfo, bio, education, experience, linkedin, github, twitter, instagram]);
+
+  // Autocompletar ubicación
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocation(e.target.value);
+    if (locationTimeout.current) clearTimeout(locationTimeout.current);
+    const value = e.target.value;
+    if (value.length < 2) {
+      setLocationSuggestions([]);
+      return;
+    }
+    locationTimeout.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&addressdetails=1&limit=5`);
+        const data = await res.json();
+        setLocationSuggestions(
+          data.map((item: any) => {
+            const city = item.address.city || item.address.town || item.address.village || "";
+            const state = item.address.state || "";
+            const country = item.address.country || "";
+            return [city, state, country].filter(Boolean).join(", ");
+          })
+        );
+      } catch {
+        setLocationSuggestions([]);
+      }
+    }, 400);
+  };
 
   return (
     <div className="container max-w-2xl py-8">
@@ -337,14 +381,31 @@ const EditProfile = () => {
             {errors.headline && <p className="text-red-500 text-sm mt-1">{errors.headline}</p>}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 relative">
             <Label htmlFor="location">Ubicación</Label>
             <Input
               id="location"
               value={location}
-              onChange={(e) => setLocation(e.target.value)}
+              onChange={handleLocationChange}
               placeholder="Ciudad, País"
+              autoComplete="off"
             />
+            {locationSuggestions.length > 0 && (
+              <div className="absolute z-20 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded shadow w-full mt-1 max-h-48 overflow-y-auto">
+                {locationSuggestions.map((suggestion, idx) => (
+                  <div
+                    key={idx}
+                    className="px-4 py-2 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900"
+                    onClick={() => {
+                      setLocation(suggestion);
+                      setLocationSuggestions([]);
+                    }}
+                  >
+                    {suggestion}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -389,6 +450,39 @@ const EditProfile = () => {
               placeholder="https://www.linkedin.com/in/tuusuario"
             />
             {errors.linkedin && <p className="text-red-500 text-sm mt-1">{errors.linkedin}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="github">GitHub</Label>
+            <Input
+              id="github"
+              value={github}
+              onChange={(e) => setGithub(e.target.value)}
+              placeholder="https://github.com/tuusuario"
+            />
+            {errors.github && <p className="text-red-500 text-sm mt-1">{errors.github}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="twitter">X (antes Twitter)</Label>
+            <Input
+              id="twitter"
+              value={twitter}
+              onChange={(e) => setTwitter(e.target.value)}
+              placeholder="https://x.com/tuusuario"
+            />
+            {errors.twitter && <p className="text-red-500 text-sm mt-1">{errors.twitter}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="instagram">Instagram</Label>
+            <Input
+              id="instagram"
+              value={instagram}
+              onChange={(e) => setInstagram(e.target.value)}
+              placeholder="https://instagram.com/tuusuario"
+            />
+            {errors.instagram && <p className="text-red-500 text-sm mt-1">{errors.instagram}</p>}
           </div>
         </div>
 

@@ -6,7 +6,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
-import { Linkedin } from "lucide-react";
+import { Linkedin, Github, Instagram } from "lucide-react";
+import { X as XIcon } from "lucide-react";
 
 const ViewProfile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -71,17 +72,55 @@ const ViewProfile = () => {
           {profile.location && (
             <div className="text-sm text-muted-foreground mt-1">{profile.location}</div>
           )}
-          {profile.linkedin && (
-            <a
-              href={profile.linkedin}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 mt-2 px-4 py-2 bg-blue-700 text-white rounded-full hover:bg-blue-800 transition"
-            >
-              <Linkedin className="h-5 w-5" />
-              Ver en LinkedIn
-            </a>
-          )}
+          {/* Redes sociales bonitas en horizontal */}
+          <div className="flex flex-row items-center gap-4 mt-6 w-full max-w-2xl mx-auto overflow-x-auto pb-2">
+            {profile.linkedin && (
+              <a
+                href={profile.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-3 py-3 px-6 rounded-full bg-[#0A66C2] text-white font-semibold shadow hover:bg-[#004182] transition text-lg whitespace-nowrap"
+              >
+                <Linkedin className="h-6 w-6" />
+                Ver en LinkedIn
+              </a>
+            )}
+            {profile.github && (
+              <a
+                href={profile.github}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-3 py-3 px-6 rounded-full bg-[#181717] text-white font-semibold shadow hover:bg-gray-800 transition text-lg whitespace-nowrap"
+              >
+                <Github className="h-6 w-6" />
+                GitHub
+              </a>
+            )}
+            {profile.twitter && (
+              <a
+                href={profile.twitter}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-3 py-3 px-6 rounded-full bg-black text-white font-semibold shadow hover:bg-gray-900 transition text-lg whitespace-nowrap"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="28" height="28" fill="none">
+                  <rect width="120" height="120" rx="60" fill="black"/>
+                  <path fill="white" d="M85.5 34.5H74.7L60.2 54.2 45.7 34.5H34.5l19.2 25.7-21.2 28.3h10.8l14.5-19.3 14.5 19.3h11.2l-21.2-28.3 19.2-25.7Zm-7.2 46.2-10.6-14.1-10.6 14.1h21.2Z"/>
+                </svg>
+              </a>
+            )}
+            {profile.instagram && (
+              <a
+                href={profile.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-3 py-3 px-6 rounded-full bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 text-white font-semibold shadow hover:opacity-90 transition text-lg whitespace-nowrap"
+              >
+                <Instagram className="h-6 w-6" />
+                Instagram
+              </a>
+            )}
+          </div>
           {currentUser?.uid === userId && (
             <Button className="mt-4" onClick={() => navigate("/profile/edit")}>Editar perfil</Button>
           )}
