@@ -6,8 +6,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
-import { Linkedin, Github, Instagram } from "lucide-react";
+import { Pencil, Linkedin, Github, Instagram } from "lucide-react";
 import { X as XIcon } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Mail, Phone, Globe } from "lucide-react";
 
 const ViewProfile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -52,91 +54,106 @@ const ViewProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header tipo LinkedIn */}
-      <div className="relative w-full h-48 bg-gradient-to-r from-blue-900 to-blue-600">
-        {/* Avatar superpuesto */}
-        <div className="absolute left-1/2 -bottom-16 transform -translate-x-1/2">
-          <Avatar className="h-32 w-32 border-4 border-background shadow-xl">
-            <AvatarImage src={profile.photoURL} />
-            <AvatarFallback className="text-4xl">{getUserInitials()}</AvatarFallback>
-          </Avatar>
-        </div>
-      </div>
-      <div className="pt-20 pb-8 max-w-2xl mx-auto">
-        <div className="flex flex-col items-center text-center">
-          <h1 className="text-3xl font-bold">{profile.displayName || "Sin nombre"}</h1>
-          {profile.headline && (
-            <div className="text-lg text-muted-foreground mt-1">{profile.headline}</div>
-          )}
-          {profile.location && (
-            <div className="text-sm text-muted-foreground mt-1">{profile.location}</div>
-          )}
-          {/* Redes sociales bonitas en horizontal */}
-          <div className="flex flex-row items-center gap-4 mt-6 w-full max-w-2xl mx-auto overflow-x-auto pb-2">
-            {profile.linkedin && (
-              <a
-                href={profile.linkedin}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-3 py-3 px-6 rounded-full bg-[#0A66C2] text-white font-semibold shadow hover:bg-[#004182] transition text-lg whitespace-nowrap"
-              >
-                <Linkedin className="h-6 w-6" />
-                Ver en LinkedIn
-              </a>
-            )}
-            {profile.github && (
-              <a
-                href={profile.github}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-3 py-3 px-6 rounded-full bg-[#181717] text-white font-semibold shadow hover:bg-gray-800 transition text-lg whitespace-nowrap"
-              >
-                <Github className="h-6 w-6" />
-                GitHub
-              </a>
-            )}
-            {profile.twitter && (
-              <a
-                href={profile.twitter}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-3 py-3 px-6 rounded-full bg-black text-white font-semibold shadow hover:bg-gray-900 transition text-lg whitespace-nowrap"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="28" height="28" fill="none">
-                  <rect width="120" height="120" rx="60" fill="black"/>
-                  <path fill="white" d="M85.5 34.5H74.7L60.2 54.2 45.7 34.5H34.5l19.2 25.7-21.2 28.3h10.8l14.5-19.3 14.5 19.3h11.2l-21.2-28.3 19.2-25.7Zm-7.2 46.2-10.6-14.1-10.6 14.1h21.2Z"/>
-                </svg>
-              </a>
-            )}
-            {profile.instagram && (
-              <a
-                href={profile.instagram}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-3 py-3 px-6 rounded-full bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 text-white font-semibold shadow hover:opacity-90 transition text-lg whitespace-nowrap"
-              >
-                <Instagram className="h-6 w-6" />
-                Instagram
-              </a>
-            )}
-          </div>
+    <div className="min-h-screen bg-background flex justify-center py-8">
+      <div className="w-full max-w-4xl bg-white dark:bg-zinc-900 rounded-2xl shadow-xl overflow-hidden">
+        {/* Header tipo LinkedIn */}
+        <div className="relative w-full h-48 bg-gradient-to-r from-slate-200 to-blue-200 dark:from-blue-900 dark:to-blue-600">
+          {/* Botón editar perfil como lápiz */}
           {currentUser?.uid === userId && (
-            <Button className="mt-4" onClick={() => navigate("/profile/edit")}>Editar perfil</Button>
+            <button
+              className="absolute top-4 right-4 z-20 bg-white/80 hover:bg-white p-2 rounded-full shadow border border-gray-200"
+              onClick={() => navigate("/profile/edit")}
+              title="Editar perfil"
+            >
+              <Pencil className="h-5 w-5 text-gray-700" />
+            </button>
           )}
+          {/* Avatar superpuesto */}
+          <div className="absolute left-8 -bottom-16">
+            <Avatar className="h-32 w-32 border-4 border-white shadow-xl">
+              <AvatarImage src={profile.photoURL} />
+              <AvatarFallback className="text-4xl">{getUserInitials()}</AvatarFallback>
+            </Avatar>
+          </div>
+        </div>
+        {/* Info principal */}
+        <div className="flex flex-row justify-between pt-20 pb-8 px-8">
+          {/* Columna izquierda: datos principales */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="text-3xl font-bold truncate">{profile.displayName || "Sin nombre"}</h1>
+              {/* (Opcional) Insignia de verificación */}
+              {/* <span className="ml-2 px-2 py-0.5 border border-blue-400 text-blue-600 rounded-full text-xs font-semibold">Añadir insignia de verificación</span> */}
+            </div>
+            {profile.headline && (
+              <div className="text-lg text-muted-foreground mb-1 truncate">{profile.headline}</div>
+            )}
+            {profile.techStack && (
+              <div className="text-base text-muted-foreground mb-1 truncate">{profile.techStack}</div>
+            )}
+            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-300 mb-2">
+              {profile.location && <span>{profile.location}</span>}
+              <span>•</span>
+              {/* Hipervínculo Información de contacto */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button className="underline text-blue-500 hover:text-blue-700 font-medium cursor-pointer">Información de contacto</button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md mx-auto">
+                  <h2 className="text-xl font-bold mb-4">Información de contacto</h2>
+                  <div className="space-y-4">
+                    {profile.contactInfo && (
+                      <div className="flex items-center gap-3">
+                        <Phone className="h-5 w-5 text-gray-500" />
+                        <span>{profile.contactInfo}</span>
+                      </div>
+                    )}
+                    {profile.email && (
+                      <div className="flex items-center gap-3">
+                        <Mail className="h-5 w-5 text-gray-500" />
+                        <span>{profile.email}</span>
+                      </div>
+                    )}
+                    {profile.linkedin && (
+                      <div className="flex items-center gap-3">
+                        <Linkedin className="h-5 w-5 text-[#0A66C2]" />
+                        <a href={profile.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">LinkedIn</a>
+                      </div>
+                    )}
+                    {profile.github && (
+                      <div className="flex items-center gap-3">
+                        <Github className="h-5 w-5 text-[#181717]" />
+                        <a href={profile.github} target="_blank" rel="noopener noreferrer" className="text-gray-900 dark:text-gray-100 hover:underline">GitHub</a>
+                      </div>
+                    )}
+                    {profile.instagram && (
+                      <div className="flex items-center gap-3">
+                        <Instagram className="h-5 w-5 text-pink-500" />
+                        <a href={profile.instagram} target="_blank" rel="noopener noreferrer" className="text-pink-500 hover:underline">Instagram</a>
+                      </div>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+            {/* (Opcional) Número de contactos */}
+            {/* <div className="text-blue-600 font-medium cursor-pointer">116 contactos</div> */}
+          </div>
+          {/* Columna derecha: organizaciones/universidad (placeholder) */}
+          <div className="flex flex-col items-end gap-2 min-w-[180px]">
+            {/* Ejemplo de logos, puedes reemplazar por tus datos reales */}
+            <div className="flex items-center gap-2">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/5/50/ACM_logo.svg" alt="ACM" className="h-8 w-8 rounded bg-white p-1 border" />
+              <span className="text-sm font-medium">ACM, Association for Computing Machinery</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Logo_UNAL_2016.svg" alt="Universidad" className="h-8 w-8 rounded bg-white p-1 border" />
+              <span className="text-sm font-medium">Universidad del Norte</span>
+            </div>
+          </div>
         </div>
         {/* Info lateral tipo LinkedIn */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-          <div className="space-y-2">
-            {profile.contactInfo && (
-              <div>
-                <span className="font-semibold">Contacto:</span> {profile.contactInfo}
-              </div>
-            )}
-            <div>
-              <span className="font-semibold">Correo:</span> {profile.email || "Sin correo"}
-            </div>
-          </div>
           <div className="space-y-2">
             {profile.techStack && (
               <div>
@@ -187,6 +204,21 @@ const ViewProfile = () => {
                 {exp.description && <div className="mt-2 text-sm">{exp.description}</div>}
               </div>
             )) : <div className="text-muted-foreground">Sin experiencia añadida.</div>}
+          </div>
+        </div>
+        {/* Sección Idiomas */}
+        <div className="mt-10">
+          <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
+            <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 20v-6M12 4v2m0 0a8 8 0 1 1-8 8"/></svg>
+            Idiomas
+          </h2>
+          <div className="flex flex-wrap gap-3 mt-2">
+            {(profile.languages && profile.languages.length > 0) ? profile.languages.map((lang: any, idx: number) => (
+              <span key={idx} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-100 dark:bg-green-900 text-green-900 dark:text-green-100 font-medium shadow">
+                <span>{lang.language}</span>
+                <span className="text-xs bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 rounded px-2 py-0.5">{lang.level}</span>
+              </span>
+            )) : <span className="text-muted-foreground">Sin idiomas añadidos.</span>}
           </div>
         </div>
       </div>

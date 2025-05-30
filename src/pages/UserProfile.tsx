@@ -34,6 +34,12 @@ const EditProfile = () => {
   const [github, setGithub] = useState("");
   const [twitter, setTwitter] = useState("");
   const [instagram, setInstagram] = useState("");
+  const [languages, setLanguages] = useState<any[]>([]);
+  const languageOptions = [
+    "Español", "Inglés", "Francés", "Alemán", "Italiano", "Portugués", "Chino", "Japonés", "Ruso", "Árabe", "Hindi", "Coreano", "Turco", "Polaco", "Holandés", "Sueco", "Danés", "Finlandés", "Noruego", "Griego", "Checo", "Húngaro", "Rumano", "Hebreo", "Tailandés", "Vietnamita", "Indonesio", "Malayo", "Filipino", "Ucraniano", "Catalán"
+  ];
+  const levelOptions = ["Básico", "Intermedio", "Avanzado", "Nativo"];
+  const [languageSuggestions, setLanguageSuggestions] = useState<string[]>([]);
   const [errors, setErrors] = useState<any>({});
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
   const locationTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -59,6 +65,7 @@ const EditProfile = () => {
             setGithub(userData.github || "");
             setTwitter(userData.twitter || "");
             setInstagram(userData.instagram || "");
+            setLanguages(userData.languages || []);
           } else {
             // Si no existe el documento, lo creamos
             await setDoc(doc(db, "users", currentUser.uid), {
@@ -77,6 +84,7 @@ const EditProfile = () => {
               github: "",
               twitter: "",
               instagram: "",
+              languages: [],
             });
           }
         } catch (error) {
@@ -151,6 +159,13 @@ const EditProfile = () => {
     if (github && !/^https:\/\/(www\.)?github\.com\/.+/.test(github)) newErrors.github = "Debe ser una URL válida de GitHub.";
     if (twitter && !/^https:\/\/(www\.)?(twitter\.com|x\.com)\/.+/.test(twitter)) newErrors.twitter = "Debe ser una URL válida de X (antes Twitter).";
     if (instagram && !/^https:\/\/(www\.)?instagram\.com\/.+/.test(instagram)) newErrors.instagram = "Debe ser una URL válida de Instagram.";
+    // Validación de idiomas
+    const languageSet = new Set();
+    languages.forEach((lang, idx) => {
+      if (!lang.language || !lang.level) newErrors[`language_${idx}`] = "Completa ambos campos.";
+      if (languageSet.has(lang.language)) newErrors[`language_${idx}`] = "No repitas idiomas.";
+      languageSet.add(lang.language);
+    });
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -196,6 +211,7 @@ const EditProfile = () => {
         github,
         twitter,
         instagram,
+        languages,
       });
 
       toast({
@@ -544,6 +560,75 @@ const EditProfile = () => {
               </div>
             ))}
             <Button type="button" variant="outline" className="mt-2" onClick={() => setExperience([...experience, { company: "", position: "", years: "", description: "" }])}>Añadir experiencia</Button>
+          </div>
+        </div>
+
+        {/* Sección Idiomas */}
+        <div className="mt-10">
+          <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
+            <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 20v-6M12 4v2m0 0a8 8 0 1 1-8 8"/></svg>
+            Idiomas
+          </h2>
+          <div className="space-y-4">
+            {languages.map((lang, idx) => (
+              <div key={idx} className="bg-white dark:bg-zinc-900 rounded-lg shadow p-4 flex flex-col gap-1 relative">
+                <button type="button" className="absolute top-2 right-2 text-red-500" onClick={() => setLanguages(languages.filter((_, i) => i !== idx))}>✕</button>
+                <div className="flex gap-2 mb-1">
+                  <div className="relative w-1/2">
+                    <Input
+                      placeholder="Idioma"
+                      value={lang.language}
+                      onChange={e => {
+                        const val = e.target.value;
+                        const arr = [...languages];
+                        arr[idx].language = val;
+                        setLanguages(arr);
+                        if (val.length > 0) {
+                          setLanguageSuggestions(languageOptions.filter(opt => opt.toLowerCase().includes(val.toLowerCase()) && !languages.some(l => l.language === opt)));
+                        } else {
+                          setLanguageSuggestions([]);
+                        }
+                      }}
+                      autoComplete="off"
+                    />
+                    {languageSuggestions.length > 0 && lang.language && (
+                      <div className="absolute z-20 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded shadow w-full mt-1 max-h-32 overflow-y-auto">
+                        {languageSuggestions.map((suggestion, sidx) => (
+                          <div
+                            key={sidx}
+                            className="px-4 py-2 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900"
+                            onClick={() => {
+                              const arr = [...languages];
+                              arr[idx].language = suggestion;
+                              setLanguages(arr);
+                              setLanguageSuggestions([]);
+                            }}
+                          >
+                            {suggestion}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <select
+                    className="w-1/2 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
+                    value={lang.level}
+                    onChange={e => {
+                      const arr = [...languages];
+                      arr[idx].level = e.target.value;
+                      setLanguages(arr);
+                    }}
+                  >
+                    <option value="">Nivel</option>
+                    {levelOptions.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </div>
+                {errors[`language_${idx}`] && <p className="text-red-500 text-sm mt-1">{errors[`language_${idx}`]}</p>}
+              </div>
+            ))}
+            <Button type="button" variant="outline" className="mt-2" onClick={() => setLanguages([...languages, { language: "", level: "" }])}>Añadir idioma</Button>
           </div>
         </div>
 
