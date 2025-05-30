@@ -30,6 +30,7 @@ const EditProfile = () => {
   const [headerPreviewUrl, setHeaderPreviewUrl] = useState<string | null>(null);
   const [education, setEducation] = useState<any[]>([]);
   const [experience, setExperience] = useState<any[]>([]);
+  const [errors, setErrors] = useState<any>({});
 
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -116,10 +117,30 @@ const EditProfile = () => {
     return getDownloadURL(storageRef);
   };
 
+  const validate = () => {
+    const newErrors: any = {};
+    if (!displayName || displayName.trim().length < 2) newErrors.displayName = "El nombre es obligatorio (mínimo 2 caracteres).";
+    if (!headline || headline.trim().length < 5) newErrors.headline = "El titular es obligatorio (mínimo 5 caracteres).";
+    if (contactInfo && !/^\S+@\S+\.\S+$/.test(contactInfo)) newErrors.contactInfo = "Debe ser un email válido o dejarse vacío.";
+    if (!bio || bio.trim().length < 10) newErrors.bio = "El campo 'Acerca de' es obligatorio (mínimo 10 caracteres).";
+    education.forEach((edu, idx) => {
+      if (!edu.institution || edu.institution.trim() === "") newErrors[`education_institution_${idx}`] = "La institución es obligatoria.";
+      if (!edu.degree || edu.degree.trim() === "") newErrors[`education_degree_${idx}`] = "El título es obligatorio.";
+      if (!edu.years || !/^\d{4}(-\d{4})?$/.test(edu.years)) newErrors[`education_years_${idx}`] = "Años obligatorio (formato: 2020 o 2020-2023).";
+    });
+    experience.forEach((exp, idx) => {
+      if (!exp.company || exp.company.trim() === "") newErrors[`experience_company_${idx}`] = "La empresa es obligatoria.";
+      if (!exp.position || exp.position.trim() === "") newErrors[`experience_position_${idx}`] = "El puesto es obligatorio.";
+      if (!exp.years || !/^\d{4}(-\d{4})?$/.test(exp.years)) newErrors[`experience_years_${idx}`] = "Años obligatorio (formato: 2020 o 2020-2023).";
+    });
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
-    
+    if (!validate()) return;
     setIsLoading(true);
 
     try {
@@ -281,6 +302,7 @@ const EditProfile = () => {
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="Tu nombre"
             />
+            {errors.displayName && <p className="text-red-500 text-sm mt-1">{errors.displayName}</p>}
           </div>
 
           <div className="space-y-2">
@@ -301,6 +323,7 @@ const EditProfile = () => {
               onChange={(e) => setHeadline(e.target.value)}
               placeholder="Ej: Desarrollador Full Stack, UX Designer, etc."
             />
+            {errors.headline && <p className="text-red-500 text-sm mt-1">{errors.headline}</p>}
           </div>
 
           <div className="space-y-2">
@@ -321,6 +344,7 @@ const EditProfile = () => {
               onChange={(e) => setContactInfo(e.target.value)}
               placeholder="Email, teléfono, redes sociales..."
             />
+            {errors.contactInfo && <p className="text-red-500 text-sm mt-1">{errors.contactInfo}</p>}
           </div>
 
           <div className="space-y-2">
@@ -342,6 +366,7 @@ const EditProfile = () => {
               placeholder="Cuéntanos sobre ti..."
               className="min-h-[100px]"
             />
+            {errors.bio && <p className="text-red-500 text-sm mt-1">{errors.bio}</p>}
           </div>
         </div>
 
@@ -358,12 +383,15 @@ const EditProfile = () => {
                 <Input className="mb-1" placeholder="Institución" value={edu.institution} onChange={e => {
                   const arr = [...education]; arr[idx].institution = e.target.value; setEducation(arr);
                 }} />
+                {errors[`education_institution_${idx}`] && <p className="text-red-500 text-sm mt-1">{errors[`education_institution_${idx}`]}</p>}
                 <Input className="mb-1" placeholder="Título" value={edu.degree} onChange={e => {
                   const arr = [...education]; arr[idx].degree = e.target.value; setEducation(arr);
                 }} />
+                {errors[`education_degree_${idx}`] && <p className="text-red-500 text-sm mt-1">{errors[`education_degree_${idx}`]}</p>}
                 <Input className="mb-1" placeholder="Años (ej: 2018-2022)" value={edu.years} onChange={e => {
                   const arr = [...education]; arr[idx].years = e.target.value; setEducation(arr);
                 }} />
+                {errors[`education_years_${idx}`] && <p className="text-red-500 text-sm mt-1">{errors[`education_years_${idx}`]}</p>}
                 <Textarea className="mb-1" placeholder="Descripción" value={edu.description} onChange={e => {
                   const arr = [...education]; arr[idx].description = e.target.value; setEducation(arr);
                 }} />
@@ -385,12 +413,15 @@ const EditProfile = () => {
                 <Input className="mb-1" placeholder="Empresa" value={exp.company} onChange={e => {
                   const arr = [...experience]; arr[idx].company = e.target.value; setExperience(arr);
                 }} />
+                {errors[`experience_company_${idx}`] && <p className="text-red-500 text-sm mt-1">{errors[`experience_company_${idx}`]}</p>}
                 <Input className="mb-1" placeholder="Puesto" value={exp.position} onChange={e => {
                   const arr = [...experience]; arr[idx].position = e.target.value; setExperience(arr);
                 }} />
+                {errors[`experience_position_${idx}`] && <p className="text-red-500 text-sm mt-1">{errors[`experience_position_${idx}`]}</p>}
                 <Input className="mb-1" placeholder="Años (ej: 2020-2023)" value={exp.years} onChange={e => {
                   const arr = [...experience]; arr[idx].years = e.target.value; setExperience(arr);
                 }} />
+                {errors[`experience_years_${idx}`] && <p className="text-red-500 text-sm mt-1">{errors[`experience_years_${idx}`]}</p>}
                 <Textarea className="mb-1" placeholder="Descripción" value={exp.description} onChange={e => {
                   const arr = [...experience]; arr[idx].description = e.target.value; setExperience(arr);
                 }} />
@@ -400,7 +431,7 @@ const EditProfile = () => {
           </div>
         </div>
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
+        <Button type="submit" className="w-full" disabled={isLoading || Object.keys(errors).length > 0}>
           {isLoading ? "Guardando..." : "Guardar Cambios"}
         </Button>
       </form>

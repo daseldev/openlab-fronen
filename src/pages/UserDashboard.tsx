@@ -57,6 +57,7 @@ const UserDashboard = () => {
     description: "",
     category: "Datos",
   });
+  const [formErrors, setFormErrors] = useState<any>({});
 
   useEffect(() => {
     if (currentUser) {
@@ -81,9 +82,19 @@ const UserDashboard = () => {
     }
   };
 
+  const validateProject = (data: any) => {
+    const errors: any = {};
+    if (!data.title || data.title.trim().length < 4) errors.title = "El título es obligatorio (mínimo 4 caracteres).";
+    if (!data.description || data.description.trim().length < 10) errors.description = "La descripción es obligatoria (mínimo 10 caracteres).";
+    if (!data.category) errors.category = "La categoría es obligatoria.";
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
+    if (!validateProject(formData)) return;
 
     try {
       const newProject = await createProject(
@@ -111,6 +122,7 @@ const UserDashboard = () => {
   const handleEditProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProject) return;
+    if (!validateProject(formData)) return;
 
     try {
       await updateProject(selectedProject.id, formData);
@@ -193,22 +205,26 @@ const UserDashboard = () => {
                   <Input
                     id="title"
                     value={formData.title}
-                    onChange={(e) =>
-                      setFormData({ ...formData, title: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setFormData({ ...formData, title: e.target.value });
+                      setFormErrors({ ...formErrors, title: undefined });
+                    }}
                     required
                   />
+                  {formErrors.title && <p className="text-red-500 text-sm mt-1">{formErrors.title}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="description">Descripción</Label>
                   <Textarea
                     id="description"
                     value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setFormData({ ...formData, description: e.target.value });
+                      setFormErrors({ ...formErrors, description: undefined });
+                    }}
                     required
                   />
+                  {formErrors.description && <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="category">Categoría</Label>
@@ -216,17 +232,21 @@ const UserDashboard = () => {
                     id="category"
                     className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
                     value={formData.category}
-                    onChange={e => setFormData({ ...formData, category: e.target.value })}
+                    onChange={e => {
+                      setFormData({ ...formData, category: e.target.value });
+                      setFormErrors({ ...formErrors, category: undefined });
+                    }}
                     required
                   >
                     {CATEGORIES.map(cat => (
                       <option key={cat.value} value={cat.value}>{cat.label}</option>
                     ))}
                   </select>
+                  {formErrors.category && <p className="text-red-500 text-sm mt-1">{formErrors.category}</p>}
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit">Crear Proyecto</Button>
+                <Button type="submit" disabled={Object.keys(formErrors).length > 0}>Crear Proyecto</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -317,22 +337,26 @@ const UserDashboard = () => {
                 <Input
                   id="edit-title"
                   value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setFormData({ ...formData, title: e.target.value });
+                    setFormErrors({ ...formErrors, title: undefined });
+                  }}
                   required
                 />
+                {formErrors.title && <p className="text-red-500 text-sm mt-1">{formErrors.title}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-description">Descripción</Label>
                 <Textarea
                   id="edit-description"
                   value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setFormData({ ...formData, description: e.target.value });
+                    setFormErrors({ ...formErrors, description: undefined });
+                  }}
                   required
                 />
+                {formErrors.description && <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-category">Categoría</Label>
@@ -340,17 +364,21 @@ const UserDashboard = () => {
                   id="edit-category"
                   className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
                   value={formData.category}
-                  onChange={e => setFormData({ ...formData, category: e.target.value })}
+                  onChange={e => {
+                    setFormData({ ...formData, category: e.target.value });
+                    setFormErrors({ ...formErrors, category: undefined });
+                  }}
                   required
                 >
                   {CATEGORIES.map(cat => (
                     <option key={cat.value} value={cat.value}>{cat.label}</option>
                   ))}
                 </select>
+                {formErrors.category && <p className="text-red-500 text-sm mt-1">{formErrors.category}</p>}
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit">Guardar Cambios</Button>
+              <Button type="submit" disabled={Object.keys(formErrors).length > 0}>Guardar Cambios</Button>
             </DialogFooter>
           </form>
         </DialogContent>
