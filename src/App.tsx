@@ -12,6 +12,8 @@ import MainLayout from "./components/layout/MainLayout";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 import Feed from "./pages/Feed";
+import Groups from "./pages/Groups";
+import GroupDetail from "./pages/GroupDetail";
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
@@ -40,6 +42,8 @@ function AppRoutes() {
       children: [
         { index: true, element: <Home /> },
         { path: "explore", element: <ExploreProjects /> },
+        { path: "groups", element: <Groups /> },
+        { path: "groups/:groupId", element: <GroupDetail /> },
         { path: "feed", element: (
           <ProtectedRoute>
             <Feed />
