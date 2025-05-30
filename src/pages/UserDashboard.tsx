@@ -172,6 +172,12 @@ const UserDashboard = () => {
     }
   };
 
+  // Validar en tiempo real
+  useEffect(() => {
+    validateProject(formData);
+    // eslint-disable-next-line
+  }, [formData]);
+
   if (isLoading) {
     return <div>Cargando...</div>;
   }

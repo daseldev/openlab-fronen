@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Project } from "@/types/project";
 import { getProject, deleteProject } from "@/lib/projects";
@@ -110,7 +110,13 @@ const ProjectDetail = () => {
               <div>
                 <CardTitle className="text-3xl">{project.title}</CardTitle>
                 <CardDescription className="mt-2 flex items-center gap-2">
-                  Por {project.authorName} • Creado el {project.createdAt.toLocaleDateString("es-ES", {
+                  Por {project.authorId ? (
+                    <Link to={`/profile/${project.authorId}`} className="text-blue-600 hover:underline font-medium">
+                      {project.authorName}
+                    </Link>
+                  ) : (
+                    <span>{project.authorName}</span>
+                  )} • Creado el {project.createdAt.toLocaleDateString("es-ES", {
                     year: "numeric",
                     month: "long",
                     day: "numeric",

@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface ProjectCardProps {
   id?: string;
@@ -18,6 +19,7 @@ interface ProjectCardProps {
   author?: {
     name?: string;
     avatar?: string;
+    authorId?: string;
   };
   isOwner?: boolean;
   onView?: (id: string) => void;
@@ -65,7 +67,13 @@ const ProjectCard = ({
             <AvatarImage src={author.avatar} alt={author.name} />
             <AvatarFallback>{author.name?.charAt(0) || "U"}</AvatarFallback>
           </Avatar>
-          <span className="text-xs text-muted-foreground">{author.name}</span>
+          {author.authorId && author.name ? (
+            <Link to={`/profile/${author.authorId}`} className="text-xs text-blue-600 hover:underline">
+              {author.name}
+            </Link>
+          ) : (
+            <span className="text-xs text-muted-foreground">{author.name}</span>
+          )}
         </div>
 
         <div className="flex space-x-2">
