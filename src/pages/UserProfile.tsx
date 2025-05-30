@@ -30,6 +30,7 @@ const EditProfile = () => {
   const [headerPreviewUrl, setHeaderPreviewUrl] = useState<string | null>(null);
   const [education, setEducation] = useState<any[]>([]);
   const [experience, setExperience] = useState<any[]>([]);
+  const [linkedin, setLinkedin] = useState("");
   const [errors, setErrors] = useState<any>({});
 
   useEffect(() => {
@@ -49,6 +50,7 @@ const EditProfile = () => {
             setHeaderURL(userData.headerURL || "");
             setEducation(userData.education || []);
             setExperience(userData.experience || []);
+            setLinkedin(userData.linkedin || "");
           } else {
             // Si no existe el documento, lo creamos
             await setDoc(doc(db, "users", currentUser.uid), {
@@ -63,6 +65,7 @@ const EditProfile = () => {
               headerURL: "",
               education: [],
               experience: [],
+              linkedin: "",
             });
           }
         } catch (error) {
@@ -121,7 +124,7 @@ const EditProfile = () => {
     const newErrors: any = {};
     if (!displayName || displayName.trim().length < 2) newErrors.displayName = "El nombre es obligatorio (mínimo 2 caracteres).";
     if (!headline || headline.trim().length < 5) newErrors.headline = "El titular es obligatorio (mínimo 5 caracteres).";
-    if (contactInfo && !/^\S+@\S+\.\S+$/.test(contactInfo)) newErrors.contactInfo = "Debe ser un email válido o dejarse vacío.";
+    if (contactInfo && !/^\d{10}$/.test(contactInfo)) newErrors.contactInfo = "Debe ser un número de teléfono válido (10 dígitos) o dejarse vacío.";
     if (!bio || bio.trim().length < 10) newErrors.bio = "El campo 'Acerca de' es obligatorio (mínimo 10 caracteres).";
     education.forEach((edu, idx) => {
       if (!edu.institution || edu.institution.trim() === "") newErrors[`education_institution_${idx}`] = "La institución es obligatoria.";
@@ -133,6 +136,7 @@ const EditProfile = () => {
       if (!exp.position || exp.position.trim() === "") newErrors[`experience_position_${idx}`] = "El puesto es obligatorio.";
       if (!exp.years || !/^\d{4}(-\d{4})?$/.test(exp.years)) newErrors[`experience_years_${idx}`] = "Años obligatorio (formato: 2020 o 2020-2023).";
     });
+    if (linkedin && !/^https:\/\/(www\.)?linkedin\.com\/.+/.test(linkedin)) newErrors.linkedin = "Debe ser una URL válida de LinkedIn.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -174,6 +178,7 @@ const EditProfile = () => {
         headerURL: newHeaderURL,
         education,
         experience,
+        linkedin,
       });
 
       toast({
@@ -210,6 +215,12 @@ const EditProfile = () => {
     }
     return currentUser?.email?.charAt(0).toUpperCase() || "U";
   };
+
+  // Validar en tiempo real
+  useEffect(() => {
+    validate();
+    // eslint-disable-next-line
+  }, [displayName, headline, contactInfo, bio, education, experience, linkedin]);
 
   return (
     <div className="container max-w-2xl py-8">
@@ -367,6 +378,17 @@ const EditProfile = () => {
               className="min-h-[100px]"
             />
             {errors.bio && <p className="text-red-500 text-sm mt-1">{errors.bio}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="linkedin">LinkedIn</Label>
+            <Input
+              id="linkedin"
+              value={linkedin}
+              onChange={(e) => setLinkedin(e.target.value)}
+              placeholder="https://www.linkedin.com/in/tuusuario"
+            />
+            {errors.linkedin && <p className="text-red-500 text-sm mt-1">{errors.linkedin}</p>}
           </div>
         </div>
 

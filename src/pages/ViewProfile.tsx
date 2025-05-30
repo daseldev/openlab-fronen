@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
+import { Linkedin } from "lucide-react";
 
 const ViewProfile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -69,6 +70,17 @@ const ViewProfile = () => {
           )}
           {profile.location && (
             <div className="text-sm text-muted-foreground mt-1">{profile.location}</div>
+          )}
+          {profile.linkedin && (
+            <a
+              href={profile.linkedin}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 mt-2 px-4 py-2 bg-blue-700 text-white rounded-full hover:bg-blue-800 transition"
+            >
+              <Linkedin className="h-5 w-5" />
+              Ver en LinkedIn
+            </a>
           )}
           {currentUser?.uid === userId && (
             <Button className="mt-4" onClick={() => navigate("/profile/edit")}>Editar perfil</Button>
