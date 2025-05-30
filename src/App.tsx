@@ -7,6 +7,7 @@ import ExploreProjects from "./pages/ExploreProjects";
 import UserProfile from "./pages/UserProfile";
 import EditProfile from "./pages/UserProfile";
 import ViewProfile from "./pages/ViewProfile";
+import UserProjects from "./pages/UserProjects";
 import MainLayout from "./components/layout/MainLayout";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Loader2 } from "lucide-react";
@@ -65,6 +66,18 @@ function AppRoutes() {
         {
           path: "profile/:userId",
           element: <ViewProfile />,
+        },
+        {
+          path: "user/:userId/projects",
+          element: <UserProjects />,
+        },
+        {
+          path: "my-projects",
+          element: (
+            <ProtectedRoute>
+              <UserProjects />
+            </ProtectedRoute>
+          ),
         },
         {
           path: "projects/:projectId",

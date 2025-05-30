@@ -67,12 +67,28 @@ const ViewProfile = () => {
       </div>
       {/* Botón Editar perfil completamente a la derecha */}
       {currentUser?.uid === userId && (
-        <div className="flex justify-end w-full px-8 mt-4">
+        <div className="flex justify-end w-full px-8 mt-4 gap-4">
           <Button
             className="shadow-lg bg-white/90 text-black hover:bg-white"
             onClick={() => navigate("/profile/edit")}
           >
             Editar perfil
+          </Button>
+          <Button
+            className="shadow-lg bg-blue-600 text-white hover:bg-blue-700"
+            onClick={() => navigate("/my-projects")}
+          >
+            Mis Proyectos
+          </Button>
+        </div>
+      )}
+      {currentUser?.uid !== userId && (
+        <div className="flex justify-end w-full px-8 mt-4">
+          <Button
+            className="shadow-lg bg-blue-600 text-white hover:bg-blue-700"
+            onClick={() => navigate(`/user/${userId}/projects`)}
+          >
+            Ver Proyectos
           </Button>
         </div>
       )}
