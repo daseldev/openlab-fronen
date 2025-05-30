@@ -5,6 +5,8 @@ import UserDashboard from "./pages/UserDashboard";
 import ProjectDetail from "./pages/ProjectDetail";
 import ExploreProjects from "./pages/ExploreProjects";
 import UserProfile from "./pages/UserProfile";
+import EditProfile from "./pages/UserProfile";
+import ViewProfile from "./pages/ViewProfile";
 import MainLayout from "./components/layout/MainLayout";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Loader2 } from "lucide-react";
@@ -51,6 +53,18 @@ function AppRoutes() {
               <UserProfile />
             </ProtectedRoute>
           ),
+        },
+        {
+          path: "profile/edit",
+          element: (
+            <ProtectedRoute>
+              <EditProfile />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "profile/:userId",
+          element: <ViewProfile />,
         },
         {
           path: "projects/:projectId",
