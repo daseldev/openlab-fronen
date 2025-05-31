@@ -1,15 +1,24 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, Timestamp, collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Linkedin, Github, Instagram } from "lucide-react";
-import { X as XIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Mail, Phone, Globe } from "lucide-react";
+import UserFavorites from "./UserFavorites";
+import { getAllProjects } from "@/lib/projects";
+import { format } from "date-fns";
+
+interface userActions {
+  id: string;
+  actionType: string;
+  description: string;
+  timestamp: any; // Firestore timestamp
+}
 
 const ViewProfile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -23,6 +32,15 @@ const ViewProfile = () => {
   const [modalUsers, setModalUsers] = useState<any[]>([]);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
 
+  // Nueva info para perfil privado
+  const [projectsCount, setProjectsCount] = useState(0);
+  const [totalLikes, setTotalLikes] = useState(0);
+  const [lastActivity, setLastActivity] = useState<Date | null>(null);
+
+  // Estado para la línea de tiempo
+  const [actions, setActions] = useState<userActions[]>([]);
+  const [loadingActions, setLoadingActions] = useState(true);
+
   useEffect(() => {
     const fetchProfile = async () => {
       if (!userId) return;
@@ -35,6 +53,23 @@ const ViewProfile = () => {
           setFollowers(data.followers || []);
           setFollowing(data.following || []);
         }
+
+        // Si es perfil propio, cargar datos extra
+        if (currentUser && currentUser.uid === userId) {
+          const allProjects = await getAllProjects();
+          const userProjects = allProjects.filter(p => p.authorId === userId);
+          setProjectsCount(userProjects.length);
+          setTotalLikes(userProjects.reduce((acc, p) => acc + (p.likes || 0), 0));
+          if (userProjects.length > 0) {
+            const latestProject = userProjects.reduce((latest, current) => {
+              if (!latest) return current;
+              return current.createdAt > latest.createdAt ? current : latest;
+            }, null as null | typeof userProjects[0]);
+            setLastActivity(latestProject ? latestProject.createdAt : null);
+          } else {
+            setLastActivity(null);
+          }
+        }
       } catch (error) {
         setProfile(null);
       } finally {
@@ -43,6 +78,34 @@ const ViewProfile = () => {
     };
     fetchProfile();
   }, [userId]);
+
+  useEffect(() => {
+  const fetchUserActions = async () => {
+    if (!userId) return;
+    setLoadingActions(true);
+    try {
+      const actionsRef = collection(db, "userActions");
+      const q = query(
+        actionsRef,
+        where("userId", "==", userId),
+        orderBy("timestamp", "desc"),
+        limit(10)
+      );
+      const querySnapshot = await getDocs(q);
+      const actionsData: userActions[] = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...(doc.data() as Omit<userActions, "id">)
+      }));
+      setActions(actionsData);
+    } catch (error) {
+      console.error("Error fetching user actions:", error);
+      setActions([]);
+    } finally {
+      setLoadingActions(false);
+    }
+  };
+  fetchUserActions();
+}, [userId]);
 
   // Función para seguir/dejar de seguir desde el modal
   const handleModalFollow = async (targetUid: string, isFollowingUser: boolean) => {
@@ -188,6 +251,54 @@ const ViewProfile = () => {
           {profile.location && (
             <div className="text-sm text-muted-foreground mt-1">{profile.location}</div>
           )}
+
+          {/* NUEVA SECCIÓN: Datos perfil privado */}
+          {isOwnProfile && (
+            <div className="mt-6 flex gap-8 text-center">
+              <div>
+                <div className="text-2xl font-bold">{projectsCount}</div>
+                <div className="text-muted-foreground">Proyectos</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{totalLikes}</div>
+                <div className="text-muted-foreground">Likes recibidos</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold">
+                  {lastActivity ? format(lastActivity, "dd/MM/yyyy") : "—"}
+                </div>
+                <div className="text-muted-foreground">Última actividad</div>
+              </div>
+            </div>
+          )}
+
+          {/* Línea de tiempo: acciones recientes */}
+          {(
+            <div className="mt-10 w-full max-w-md">
+              <h2 className="text-xl font-semibold mb-4">Actividad Reciente</h2>
+              {loadingActions ? (
+                <p>Cargando actividades...</p>
+              ) : actions.length === 0 ? (
+                <p className="text-muted-foreground">No hay actividades recientes.</p>
+              ) : (
+                <ul className="space-y-4">
+                  {actions.map(({ id, description, timestamp }) => (
+                    <li
+                      key={id}
+                      className="border-l-2 border-blue-600 pl-4 relative"
+                    >
+                      <span className="absolute -left-3 top-1.5 w-6 h-6 rounded-full bg-blue-600"></span>
+                      <div className="text-gray-700">{description}</div>
+                      <div className="text-xs text-gray-500">
+                        {format(timestamp.toDate(), "dd/MM/yyyy")}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+          
           {/* Seguidores/Seguidos */}
           <div className="flex gap-6 mt-4">
             <button className="text-blue-600 hover:underline font-medium" onClick={() => openModal("followers")}>{followers.length} seguidores</button>
@@ -339,6 +450,12 @@ const ViewProfile = () => {
             )) : <span className="text-muted-foreground">Sin idiomas añadidos.</span>}
           </div>
         </div>
+        {/* Proyectos guardados solo si es mi perfil */}
+          {currentUser?.uid === userId && (
+            <div className="mt-10">
+              <UserFavorites />
+            </div>
+          )}
       </div>
     </div>
   );

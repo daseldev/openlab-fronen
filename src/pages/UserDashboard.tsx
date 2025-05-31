@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Project } from "@/types/project";
-import { getUserProjects, deleteProject, createProject, updateProject } from "@/lib/projects";
+import { getUserProjects, deleteProject, createProject, updateProject, getProjectComments } from "@/lib/projects";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
-import { Plus, Edit, Trash2, ExternalLink } from "lucide-react";
+import { Plus, Edit, Trash2, ExternalLink, Heart, MessageCircle, Bookmark } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 
@@ -48,6 +48,7 @@ const UserDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [commentsCountByProject, setCommentsCountByProject] = useState<{ [projectId: string]: number }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -65,13 +66,32 @@ const UserDashboard = () => {
     if (currentUser) {
       loadProjects();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, currentUser]);
+
+  const loadCommentsCount = async (projectIds: string[]) => {
+    const counts: { [projectId: string]: number } = {};
+    for (const id of projectIds) {
+      try {
+        const commentsData = await getProjectComments(id);
+        counts[id] = commentsData.length;
+      } catch {
+        counts[id] = 0;
+      }
+    }
+    setCommentsCountByProject(counts);
+  };
 
   const loadProjects = async () => {
     if (!currentUser) return;
+    setIsLoading(true);
     try {
       const userProjects = await getUserProjects(currentUser.uid);
       setProjects(userProjects);
+
+      // Obtener cantidad de comentarios por proyecto
+      const projectIds = userProjects.map((p) => p.id);
+      await loadCommentsCount(projectIds);
     } catch (error) {
       console.error("Error loading projects:", error);
       toast({
@@ -86,8 +106,10 @@ const UserDashboard = () => {
 
   const validateProject = (data: any) => {
     const errors: any = {};
-    if (!data.title || data.title.trim().length < 4) errors.title = "El título es obligatorio (mínimo 4 caracteres).";
-    if (!data.description || data.description.trim().length < 10) errors.description = "La descripción es obligatoria (mínimo 10 caracteres).";
+    if (!data.title || data.title.trim().length < 4)
+      errors.title = "El título es obligatorio (mínimo 4 caracteres).";
+    if (!data.description || data.description.trim().length < 10)
+      errors.description = "La descripción es obligatoria (mínimo 10 caracteres).";
     if (!data.category) errors.category = "La categoría es obligatoria.";
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -130,9 +152,7 @@ const UserDashboard = () => {
       await updateProject(selectedProject.id, formData);
       setProjects(
         projects.map((p) =>
-          p.id === selectedProject.id
-            ? { ...p, ...formData, updatedAt: new Date() }
-            : p
+          p.id === selectedProject.id ? { ...p, ...formData, updatedAt: new Date() } : p
         )
       );
       setEditDialogOpen(false);
@@ -177,16 +197,12 @@ const UserDashboard = () => {
   // Validar en tiempo real
   useEffect(() => {
     validateProject(formData);
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData]);
 
   if (isLoading) {
     return <div>Cargando...</div>;
   }
-
-  // Debug logs
-  console.log("UID actual:", currentUser?.uid);
-  console.log("Proyectos traídos:", projects);
 
   return (
     <div className="container mx-auto py-8">
@@ -219,7 +235,9 @@ const UserDashboard = () => {
                     }}
                     required
                   />
-                  {formErrors.title && <p className="text-red-500 text-sm mt-1">{formErrors.title}</p>}
+                  {formErrors.title && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.title}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="description">Descripción</Label>
@@ -232,7 +250,9 @@ const UserDashboard = () => {
                     }}
                     required
                   />
-                  {formErrors.description && <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>}
+                  {formErrors.description && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="category">Categoría</Label>
@@ -240,21 +260,37 @@ const UserDashboard = () => {
                     id="category"
                     className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
                     value={formData.category}
-                    onChange={e => {
+                    onChange={(e) => {
                       setFormData({ ...formData, category: e.target.value });
                       setFormErrors({ ...formErrors, category: undefined });
                     }}
                     required
                   >
-                    {CATEGORIES.map(cat => (
-                      <option key={cat.value} value={cat.value}>{cat.label}</option>
+                    {CATEGORIES.map((cat) => (
+                      <option key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </option>
                     ))}
                   </select>
-                  {formErrors.category && <p className="text-red-500 text-sm mt-1">{formErrors.category}</p>}
+                  {formErrors.category && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.category}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mt-4">
+                  <Switch
+                    id="visible-switch"
+                    checked={formData.visible}
+                    onCheckedChange={(val) => setFormData({ ...formData, visible: val })}
+                  />
+                  <Label htmlFor="visible-switch" className="cursor-pointer select-none">
+                    {formData.visible ? "Visible" : "Invisible"}
+                  </Label>
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" disabled={Object.keys(formErrors).length > 0}>Crear Proyecto</Button>
+                <Button type="submit" disabled={Object.keys(formErrors).length > 0}>
+                  Crear Proyecto
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -263,9 +299,7 @@ const UserDashboard = () => {
 
       {projects.length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-gray-500">
-            No tienes proyectos creados. ¡Crea tu primer proyecto!
-          </p>
+          <p className="text-gray-500">No tienes proyectos creados. ¡Crea tu primer proyecto!</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -276,54 +310,66 @@ const UserDashboard = () => {
                 <CardDescription>
                   <div className="flex items-center gap-2">
                     <span>
-                      Creado el {project.createdAt.toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" })}
+                      Creado el{" "}
+                      {project.createdAt.toLocaleDateString("es-ES", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
                     </span>
-                    <Badge className="bg-muted text-foreground">
-                      {project.category}
-                    </Badge>
+                    <Badge className="bg-muted text-foreground">{project.category}</Badge>
                   </div>
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  {project.description}
-                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">{project.description}</p>
               </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button
-                  variant="outline"
-                  onClick={() => navigate(`/projects/${project.id}`)}
-                >
+              <CardFooter className="flex justify-between items-center">
+                <Button variant="outline" onClick={() => navigate(`/projects/${project.id}`)}>
                   <ExternalLink className="mr-2 h-4 w-4" />
                   Ver
                 </Button>
-                <div className="space-x-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => {
-                      setSelectedProject(project);
-                      setFormData({
-                        title: project.title,
-                        description: project.description,
-                        category: project.category,
-                        visible: project.visible,
-                      });
-                      setEditDialogOpen(true);
-                    }}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => {
-                      setSelectedProject(project);
-                      setDeleteDialogOpen(true);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                <div className="flex space-x-4 items-center">
+                  <div className="flex items-center space-x-1">
+                    <Heart className="h-4 w-4 text-red-500" />
+                    <span>{project.likes || 0}</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <MessageCircle className="h-4 w-4" />
+                    <span>{commentsCountByProject[project.id] || 0}</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Bookmark className="h-4 w-4" />
+                    <span>{project.saves || 0}</span>
+                  </div>
+                  <div className="space-x-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        setSelectedProject(project);
+                        setFormData({
+                          title: project.title,
+                          description: project.description,
+                          category: project.category,
+                          visible: project.visible,
+                        });
+                        setEditDialogOpen(true);
+                      }}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        setSelectedProject(project);
+                        setDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardFooter>
             </Card>
@@ -335,9 +381,7 @@ const UserDashboard = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Editar Proyecto</DialogTitle>
-            <DialogDescription>
-              Modifica los detalles de tu proyecto.
-            </DialogDescription>
+            <DialogDescription>Modifica los detalles de tu proyecto.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEditProject}>
             <div className="space-y-4 py-4">
@@ -352,7 +396,9 @@ const UserDashboard = () => {
                   }}
                   required
                 />
-                {formErrors.title && <p className="text-red-500 text-sm mt-1">{formErrors.title}</p>}
+                {formErrors.title && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.title}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-description">Descripción</Label>
@@ -365,7 +411,9 @@ const UserDashboard = () => {
                   }}
                   required
                 />
-                {formErrors.description && <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>}
+                {formErrors.description && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-category">Categoría</Label>
@@ -373,23 +421,27 @@ const UserDashboard = () => {
                   id="edit-category"
                   className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
                   value={formData.category}
-                  onChange={e => {
+                  onChange={(e) => {
                     setFormData({ ...formData, category: e.target.value });
                     setFormErrors({ ...formErrors, category: undefined });
                   }}
                   required
                 >
-                  {CATEGORIES.map(cat => (
-                    <option key={cat.value} value={cat.value}>{cat.label}</option>
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </option>
                   ))}
                 </select>
-                {formErrors.category && <p className="text-red-500 text-sm mt-1">{formErrors.category}</p>}
+                {formErrors.category && (
+                  <p className="text-red-500 text-sm mt-1">{formErrors.category}</p>
+                )}
               </div>
               <div className="flex items-center gap-2 mt-4">
                 <Switch
                   id="visible-switch"
                   checked={formData.visible}
-                  onCheckedChange={val => setFormData({ ...formData, visible: val })}
+                  onCheckedChange={(val) => setFormData({ ...formData, visible: val })}
                 />
                 <Label htmlFor="visible-switch" className="cursor-pointer select-none">
                   {formData.visible ? "Visible" : "Invisible"}
@@ -397,7 +449,9 @@ const UserDashboard = () => {
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit" disabled={Object.keys(formErrors).length > 0}>Guardar Cambios</Button>
+              <Button type="submit" disabled={Object.keys(formErrors).length > 0}>
+                Guardar Cambios
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -408,15 +462,11 @@ const UserDashboard = () => {
           <DialogHeader>
             <DialogTitle>Eliminar Proyecto</DialogTitle>
             <DialogDescription>
-              ¿Estás seguro de que deseas eliminar este proyecto? Esta acción no se
-              puede deshacer.
+              ¿Estás seguro de que deseas eliminar este proyecto? Esta acción no se puede deshacer.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
               Cancelar
             </Button>
             <Button variant="destructive" onClick={handleDeleteProject}>

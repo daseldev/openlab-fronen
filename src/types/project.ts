@@ -1,4 +1,5 @@
 export interface Project {
+  commentsCount: number;
   id: string;
   title: string;
   description: string;
@@ -8,6 +9,10 @@ export interface Project {
   createdAt: Date;
   updatedAt: Date;
   visible: boolean;
+  likes?: number;
+  likedBy?: string[];
+  saves?: number;
+  savedBy?: string[];
 }
 
 export interface CreateProjectData {
@@ -23,3 +28,10 @@ export interface UpdateProjectData {
   category?: string;
   visible?: boolean;
 } 
+export interface ProjectComment {
+  id: string;
+  authorId: string;
+  authorName: string;
+  content: string;
+  createdAt: Date;
+}

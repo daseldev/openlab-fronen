@@ -1,3 +1,4 @@
+// src/components/ProjectCard.tsx
 import React from "react";
 import {
   Card,
@@ -5,103 +6,104 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+import { Heart, MessageCircle, Bookmark, BookmarkMinus } from "lucide-react";
+import { Project } from "@/types/project";
 
 interface ProjectCardProps {
-  id?: string;
-  title?: string;
-  description?: string;
-  author?: {
-    name?: string;
-    avatar?: string;
-    authorId?: string;
-  };
-  isOwner?: boolean;
-  onView?: (id: string) => void;
-  onEdit?: (id: string) => void;
-  onDelete?: (id: string) => void;
+  project: Project;
+  currentUser: any | null;
+  loadingLike: boolean;
+  loadingSave: boolean;
+  onLikeToggle: (projectId: string) => void;
+  onSaveToggle: (projectId: string) => void;
+  onOpenComments: (projectId: string) => void;
+  navigateToProject: (projectId: string) => void;
+  commentsCount: number;
 }
 
-const ProjectCard = ({
-  id = "project-1",
-  title = "Project Title",
-  description = "This is a brief description of the project. It gives an overview of what the project is about.",
-  author = {
-    name: "John Doe",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
-  },
-  isOwner = false,
-  onView = () => {},
-  onEdit = () => {},
-  onDelete = () => {},
-}: ProjectCardProps) => {
-  return (
-    <Card className="w-full max-w-sm h-full bg-card overflow-hidden flex flex-col transition-all hover:shadow-md">
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <CardTitle className="text-lg font-semibold line-clamp-1">
-            {title}
-          </CardTitle>
-          {isOwner && (
-            <Badge variant="secondary" className="ml-2">
-              Your Project
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
+const ProjectCard: React.FC<ProjectCardProps> = ({
+  project,
+  currentUser,
+  loadingLike,
+  loadingSave,
+  onLikeToggle,
+  onSaveToggle,
+  onOpenComments,
+  navigateToProject,
+  commentsCount,
+}) => {
+  const likedBy = project.likedBy || [];
+  const hasLiked = currentUser ? likedBy.includes(currentUser.uid) : false;
+  const savedBy = project.savedBy || [];
+  const hasSaved = currentUser ? savedBy.includes(currentUser.uid) : false;
 
-      <CardContent className="flex-grow">
-        <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
-          {description}
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{project.title}</CardTitle>
+        <CardDescription>
+          <div className="flex items-center gap-2">
+            <span>
+              Por {project.authorName} • Creado el{" "}
+              {project.createdAt.toLocaleDateString("es-ES", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </span>
+            <Badge className="bg-muted text-foreground">{project.category}</Badge>
+          </div>
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3">
+          {project.description}
         </p>
       </CardContent>
+      <CardFooter className="flex justify-between items-center space-x-2">
+        <Button
+          variant="outline"
+          onClick={() => navigateToProject(project.id || "")}
+          className="flex-grow"
+        >
+          Ver Proyecto
+        </Button>
 
-      <CardFooter className="pt-2 flex justify-between items-center border-t">
-        <div className="flex items-center space-x-2">
-          <Avatar className="h-6 w-6">
-            <AvatarImage src={author.avatar} alt={author.name} />
-            <AvatarFallback>{author.name?.charAt(0) || "U"}</AvatarFallback>
-          </Avatar>
-          {author.authorId && author.name ? (
-            <Link to={`/profile/${author.authorId}`} className="text-xs text-blue-600 hover:underline">
-              {author.name}
-            </Link>
-          ) : (
-            <span className="text-xs text-muted-foreground">{author.name}</span>
-          )}
-        </div>
+        <Button
+          variant={hasLiked ? "destructive" : "ghost"}
+          onClick={() => onLikeToggle(project.id || "")}
+          disabled={loadingLike}
+          className="flex items-center space-x-1"
+          title={hasLiked ? "Quitar like" : "Dar like"}
+        >
+          <Heart />
+          <span>{project.likes || 0}</span>
+        </Button>
 
-        <div className="flex space-x-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onView(id)}
-            className="flex items-center"
-          >
-            <Eye className="h-4 w-4 mr-1" />
-            View
-          </Button>
+        <Button
+          variant="ghost"
+          onClick={() => onOpenComments(project.id || "")}
+          className="flex items-center space-x-1"
+          title="Comentarios"
+        >
+          <MessageCircle />
+          <span>{commentsCount || 0}</span>
+        </Button>
 
-          {isOwner && (
-            <>
-              <Button variant="outline" size="sm" onClick={() => onEdit(id)}>
-                Edit
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => onDelete(id)}
-              >
-                Delete
-              </Button>
-            </>
-          )}
-        </div>
+        <Button
+          variant={hasSaved ? "secondary" : "ghost"}
+          onClick={() => onSaveToggle(project.id || "")}
+          disabled={loadingSave}
+          className="flex items-center space-x-1"
+          title={hasSaved ? "Quitar guardado" : "Guardar"}
+        >
+          {hasSaved ? <Bookmark /> : <BookmarkMinus />}
+          <span>{project.saves || 0}</span>
+        </Button>
       </CardFooter>
     </Card>
   );
