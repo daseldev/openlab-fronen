@@ -28,6 +28,7 @@ import { toast } from "@/components/ui/use-toast";
 import { Plus, Edit, Trash2, ExternalLink, Heart, MessageCircle, Bookmark } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import {addAchievement} from "@/utils/achievements"
 
 const CATEGORIES = [
   { value: "Datos", label: "Datos" },
@@ -121,6 +122,7 @@ const UserDashboard = () => {
     if (!validateProject(formData)) return;
 
     try {
+      const isFirstProject = projects.length === 0;
       const newProject = await createProject(
         formData,
         currentUser.uid,
@@ -129,6 +131,15 @@ const UserDashboard = () => {
       setProjects([newProject, ...projects]);
       setCreateDialogOpen(false);
       setFormData({ title: "", description: "", category: "Datos", visible: true });
+      // Si es el primer proyecto, agrega el logro
+      if (isFirstProject) {
+        await addAchievement(currentUser.uid, "first_project");
+        toast({
+          title: "🎉 ¡Logro desbloqueado!",
+          description: "¡Has creado tu primer proyecto!",
+          variant: "default",
+        });
+      }
       toast({
         title: "Proyecto creado",
         description: "Tu proyecto ha sido creado exitosamente.",

@@ -219,6 +219,8 @@ const MainLayout = () => {
     { path: "/", label: "Inicio" },
     { path: "/groups", label: "Grupos" },
     { path: "/explore", label: "Explorar" },
+    { path: "/ranking", label: "Ranking" },
+
     ...(currentUser ? [
       { path: "/feed", label: "Feed" },
       { path: "/dashboard", label: "Mis Proyectos" },
