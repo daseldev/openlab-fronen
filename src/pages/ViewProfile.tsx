@@ -31,6 +31,7 @@ const ViewProfile = () => {
   const [modalType, setModalType] = useState<"followers" | "following" | null>(null);
   const [modalUsers, setModalUsers] = useState<any[]>([]);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
+  const [achievements, setAchievements] = useState<string[]>([]);
 
   // Nueva info para perfil privado
   const [projectsCount, setProjectsCount] = useState(0);
@@ -51,6 +52,8 @@ const ViewProfile = () => {
           const data = userDoc.data();
           setProfile(data);
           setFollowers(data.followers || []);
+          setAchievements(data.achievements || []);
+
           setFollowing(data.following || []);
         }
 
@@ -80,32 +83,32 @@ const ViewProfile = () => {
   }, [userId]);
 
   useEffect(() => {
-  const fetchUserActions = async () => {
-    if (!userId) return;
-    setLoadingActions(true);
-    try {
-      const actionsRef = collection(db, "userActions");
-      const q = query(
-        actionsRef,
-        where("userId", "==", userId),
-        orderBy("timestamp", "desc"),
-        limit(10)
-      );
-      const querySnapshot = await getDocs(q);
-      const actionsData: userActions[] = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...(doc.data() as Omit<userActions, "id">)
-      }));
-      setActions(actionsData);
-    } catch (error) {
-      console.error("Error fetching user actions:", error);
-      setActions([]);
-    } finally {
-      setLoadingActions(false);
-    }
-  };
-  fetchUserActions();
-}, [userId]);
+    const fetchUserActions = async () => {
+      if (!userId) return;
+      setLoadingActions(true);
+      try {
+        const actionsRef = collection(db, "userActions");
+        const q = query(
+          actionsRef,
+          where("userId", "==", userId),
+          orderBy("timestamp", "desc"),
+          limit(10)
+        );
+        const querySnapshot = await getDocs(q);
+        const actionsData: userActions[] = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...(doc.data() as Omit<userActions, "id">)
+        }));
+        setActions(actionsData);
+      } catch (error) {
+        console.error("Error fetching user actions:", error);
+        setActions([]);
+      } finally {
+        setLoadingActions(false);
+      }
+    };
+    fetchUserActions();
+  }, [userId]);
 
   // Función para seguir/dejar de seguir desde el modal
   const handleModalFollow = async (targetUid: string, isFollowingUser: boolean) => {
@@ -125,7 +128,7 @@ const ViewProfile = () => {
         setFollowing([...following, targetUid]);
         setModalUsers((prev) => prev.map(u => u.uid === targetUid ? { ...u, _isFollowing: true } : u));
       }
-    } catch {}
+    } catch { }
   };
 
   // Al cargar usuarios para el modal, marcar si ya los sigues
@@ -137,7 +140,7 @@ const ViewProfile = () => {
         if (userDoc.exists()) {
           users.push({ uid, ...userDoc.data(), _isFollowing: following.includes(uid) });
         }
-      } catch {}
+      } catch { }
     }
     setModalUsers(users);
   };
@@ -271,6 +274,14 @@ const ViewProfile = () => {
               </div>
             </div>
           )}
+          {
+            achievements.includes("first_project") && (
+              <div className="mt-6 flex gap-8 text-center">
+                <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs px-3 py-1 rounded-full flex items-center gap-1">
+                  🎉 ¡Logro: Creaste tu primer proyecto!
+                </span>
+              </div>
+            )}
 
           {/* Línea de tiempo: acciones recientes */}
           {(
@@ -298,7 +309,7 @@ const ViewProfile = () => {
               )}
             </div>
           )}
-          
+
           {/* Seguidores/Seguidos */}
           <div className="flex gap-6 mt-4">
             <button className="text-blue-600 hover:underline font-medium" onClick={() => openModal("followers")}>{followers.length} seguidores</button>
@@ -406,7 +417,7 @@ const ViewProfile = () => {
         {/* Sección Estudios */}
         <div className="mt-10">
           <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
-            <svg className="h-6 w-6 text-blue-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422A12.083 12.083 0 0 1 21 13.5c0 2.485-4.03 4.5-9 4.5s-9-2.015-9-4.5c0-.538.214-1.05.84-1.922L12 14z"/></svg>
+            <svg className="h-6 w-6 text-blue-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 14l9-5-9-5-9 5 9 5z" /><path d="M12 14l6.16-3.422A12.083 12.083 0 0 1 21 13.5c0 2.485-4.03 4.5-9 4.5s-9-2.015-9-4.5c0-.538.214-1.05.84-1.922L12 14z" /></svg>
             Estudios
           </h2>
           <div className="space-y-4">
@@ -422,7 +433,7 @@ const ViewProfile = () => {
         {/* Sección Experiencia */}
         <div className="mt-10">
           <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
-            <svg className="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4M8 3v4M2 11h20"/></svg>
+            <svg className="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 3v4M8 3v4M2 11h20" /></svg>
             Experiencia
           </h2>
           <div className="space-y-4">
@@ -438,7 +449,7 @@ const ViewProfile = () => {
         {/* Sección Idiomas */}
         <div className="mt-10">
           <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
-            <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 20v-6M12 4v2m0 0a8 8 0 1 1-8 8"/></svg>
+            <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 20v-6M12 4v2m0 0a8 8 0 1 1-8 8" /></svg>
             Idiomas
           </h2>
           <div className="flex flex-wrap gap-3 mt-2">
@@ -451,11 +462,11 @@ const ViewProfile = () => {
           </div>
         </div>
         {/* Proyectos guardados solo si es mi perfil */}
-          {currentUser?.uid === userId && (
-            <div className="mt-10">
-              <UserFavorites />
-            </div>
-          )}
+        {currentUser?.uid === userId && (
+          <div className="mt-10">
+            <UserFavorites />
+          </div>
+        )}
       </div>
     </div>
   );

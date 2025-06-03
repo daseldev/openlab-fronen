@@ -8,6 +8,7 @@ import UserProfile from "./pages/UserProfile";
 import EditProfile from "./pages/UserProfile";
 import ViewProfile from "./pages/ViewProfile";
 import UserProjects from "./pages/UserProjects";
+import Ranking from "./pages/Ranking"
 import MainLayout from "./components/layout/MainLayout";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Loader2 } from "lucide-react";
@@ -44,6 +45,7 @@ function AppRoutes() {
         { path: "explore", element: <ExploreProjects /> },
         { path: "groups", element: <Groups /> },
         { path: "groups/:groupId", element: <GroupDetail /> },
+        { path: "ranking", element: <Ranking/>}, 
         { path: "feed", element: (
           <ProtectedRoute>
             <Feed />

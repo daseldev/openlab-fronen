@@ -110,12 +110,25 @@ export const getUserProjects = async (userId: string): Promise<Project[]> => {
   );
 
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-    createdAt: doc.data()?.createdAt?.toDate() || new Date(),
-    updatedAt: doc.data()?.updatedAt?.toDate() || new Date(),
-  })) as Project[];
+
+  // Modificación: contar comentarios para cada proyecto
+  const projectsWithComments = await Promise.all(
+    querySnapshot.docs.map(async (doc) => {
+      const data = doc.data();
+      // Contar comentarios en la subcolección "comments"
+      const commentsCol = collection(db, PROJECTS_COLLECTION, doc.id, "comments");
+      const commentsSnapshot = await getDocs(commentsCol);
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data?.createdAt?.toDate() || new Date(),
+        updatedAt: data?.updatedAt?.toDate() || new Date(),
+        commentsCount: commentsSnapshot.size, // cantidad de comentarios
+      } as Project & { commentsCount: number };
+    })
+  );
+
+  return projectsWithComments;
 };
 
 export const getAllProjects = async (): Promise<Project[]> => {

@@ -285,7 +285,7 @@ const EditProfile = () => {
   return (
     <div className="container max-w-2xl py-8">
       <h1 className="text-3xl font-bold mb-8">Mi Perfil</h1>
-      
+
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="flex flex-col items-center space-y-4">
           <div className="relative group">
@@ -505,7 +505,7 @@ const EditProfile = () => {
         {/* Sección Estudios */}
         <div className="mt-10">
           <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
-            <svg className="h-6 w-6 text-blue-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422A12.083 12.083 0 0 1 21 13.5c0 2.485-4.03 4.5-9 4.5s-9-2.015-9-4.5c0-.538.214-1.05.84-1.922L12 14z"/></svg>
+            <svg className="h-6 w-6 text-blue-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 14l9-5-9-5-9 5 9 5z" /><path d="M12 14l6.16-3.422A12.083 12.083 0 0 1 21 13.5c0 2.485-4.03 4.5-9 4.5s-9-2.015-9-4.5c0-.538.214-1.05.84-1.922L12 14z" /></svg>
             Estudios
           </h2>
           <div className="space-y-4">
@@ -535,7 +535,7 @@ const EditProfile = () => {
         {/* Sección Experiencia */}
         <div className="mt-10">
           <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
-            <svg className="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4M8 3v4M2 11h20"/></svg>
+            <svg className="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 3v4M8 3v4M2 11h20" /></svg>
             Experiencia
           </h2>
           <div className="space-y-4">
@@ -566,7 +566,7 @@ const EditProfile = () => {
         {/* Sección Idiomas */}
         <div className="mt-10">
           <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
-            <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 20v-6M12 4v2m0 0a8 8 0 1 1-8 8"/></svg>
+            <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 20v-6M12 4v2m0 0a8 8 0 1 1-8 8" /></svg>
             Idiomas
           </h2>
           <div className="space-y-4">
